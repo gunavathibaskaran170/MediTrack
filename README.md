@@ -15,10 +15,7 @@
 ## 📋 Overview
 
 **MediTrack** is a comprehensive HealthTech mobile application designed to help individuals manage chronic health conditions, medication schedules, vital records, doctor visits, prescriptions, and emergency situations — all from a single platform.
-
 MediTrack acts as a digital health companion that assists users in maintaining their healthcare routine through smart reminders, tracking systems, visual analytics, and PDF report generation.
-
-> ⚠️ **Disclaimer:** MediTrack is not a diagnostic tool and does not provide medical advice. Its purpose is to improve health management, medication adherence, and record keeping.
 
 ---
 
