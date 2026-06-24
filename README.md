@@ -169,7 +169,7 @@ Firestore
 |---|---|
 | Person 1 | Auth, Profile, Firebase Auth |
 | Person 2 | Vitals, Vital Model, Vital Repository |
-| Person 3 (Nee) | Medication, Doctor Visits, Prescriptions, Notifications, Medicine Repository |
+| Person 3 | Medication, Doctor Visits, Prescriptions, Notifications, Medicine Repository |
 | Person 4 | Dashboard, Analytics, Reports, Emergency, PDF Service, SOS Service |
 
 ---
