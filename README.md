@@ -232,4 +232,3 @@ flutter run
 ## 📃 License
 
 This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
->>>>>>> 823fb2a8082c06c233c094ddcdb9c4622408e8b3
