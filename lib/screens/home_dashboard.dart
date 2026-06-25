@@ -19,22 +19,12 @@ class HomeDashboard extends StatefulWidget {
   State<HomeDashboard> createState() => _HomeDashboardState();
 }
 
-<<<<<<< HEAD
-class _HomeDashboardState extends State<HomeDashboard> with SingleTickerProviderStateMixin {
-=======
 class _HomeDashboardState extends State<HomeDashboard>
     with SingleTickerProviderStateMixin, WidgetsBindingObserver {
->>>>>>> b0efc377602ecaaacbc9044e3b7a858a3db563af
   late AnimationController _entranceController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
 
-<<<<<<< HEAD
-  @override
-  void initState() {
-    super.initState();
-    
-=======
   final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
   List<DueDose> _localDueDoses = [];
   final Set<String> _takenDoseKeys = {};
@@ -44,25 +34,16 @@ class _HomeDashboardState extends State<HomeDashboard>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
 
->>>>>>> b0efc377602ecaaacbc9044e3b7a858a3db563af
     _entranceController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 700),
     );
-<<<<<<< HEAD
-    
-=======
 
->>>>>>> b0efc377602ecaaacbc9044e3b7a858a3db563af
     _fadeAnimation = CurvedAnimation(
       parent: _entranceController,
       curve: Curves.easeIn,
     );
-<<<<<<< HEAD
-    
-=======
 
->>>>>>> b0efc377602ecaaacbc9044e3b7a858a3db563af
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0.0, 0.05),
       end: Offset.zero,
@@ -84,10 +65,6 @@ class _HomeDashboardState extends State<HomeDashboard>
 
   @override
   void dispose() {
-<<<<<<< HEAD
-    _entranceController.dispose();
-    super.dispose();
-=======
     WidgetsBinding.instance.removeObserver(this);
     _entranceController.dispose();
     super.dispose();
@@ -167,7 +144,6 @@ class _HomeDashboardState extends State<HomeDashboard>
         }
       }
     });
->>>>>>> b0efc377602ecaaacbc9044e3b7a858a3db563af
   }
 
   String _getInitials(String name) {
@@ -223,68 +199,6 @@ class _HomeDashboardState extends State<HomeDashboard>
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-<<<<<<< HEAD
-              ],
-            ),
-          ),
-          Expanded(
-            child: FadeTransition(
-              opacity: _fadeAnimation,
-              child: SlideTransition(
-                position: _slideAnimation,
-                child: RefreshIndicator(
-                  onRefresh: () async {
-                    await userProvider.loadUser();
-                    await vitalsProvider.loadTodayVitals();
-                    await vitalsProvider.loadVitals();
-                    await medicineProvider.loadMedicines();
-                  },
-                  child: SingleChildScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.all(MediTrackSpacing.screenHorizontalPadding),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Section 1 - Today's Vitals
-                        _buildSectionHeader(
-                          context: context,
-                          title: "Today's Vitals",
-                          actionText: "Log Now →",
-                          onActionTap: () => Navigator.pushNamed(context, '/vitals/log'),
-                        ),
-                        const SizedBox(height: MediTrackSpacing.titleToContentGap),
-                        _buildVitalsHorizontalList(context, today, vitalsProvider),
-                        const SizedBox(height: MediTrackSpacing.large),
-
-                        // Section 2 - Medicines Due Today
-                        _buildSectionHeader(
-                          context: context,
-                          title: "Medicines Due Today",
-                          actionText: "View All →",
-                          onActionTap: () => Navigator.pushNamed(context, '/medicines'),
-                        ),
-                        const SizedBox(height: MediTrackSpacing.titleToContentGap),
-                        _buildMedicinesList(context, medicineProvider),
-                        const SizedBox(height: MediTrackSpacing.large),
-
-                        // Section 3 - Quick Actions
-                        Text(
-                          'Quick Actions',
-                          style: context.titleMedium,
-                        ),
-                        const SizedBox(height: MediTrackSpacing.titleToContentGap),
-                        _buildQuickActionsGrid(context),
-                        const SizedBox(height: MediTrackSpacing.large),
-
-                        // Section 4 - BP Sparkline
-                        _buildBPSparklineCard(context, vitalsProvider.vitals),
-                        const SizedBox(height: 80), // padding for bottom SOS FAB
-                      ],
-                    ),
-                  ),
-                ),
-=======
->>>>>>> b0efc377602ecaaacbc9044e3b7a858a3db563af
               ),
             ),
           ),
