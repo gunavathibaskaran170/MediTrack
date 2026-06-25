@@ -16,10 +16,33 @@ class HomeDashboard extends StatefulWidget {
   State<HomeDashboard> createState() => _HomeDashboardState();
 }
 
-class _HomeDashboardState extends State<HomeDashboard> {
+class _HomeDashboardState extends State<HomeDashboard> with SingleTickerProviderStateMixin {
+  late AnimationController _entranceController;
+  late Animation<double> _fadeAnimation;
+  late Animation<Offset> _slideAnimation;
+
   @override
   void initState() {
     super.initState();
+    
+    _entranceController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 700),
+    );
+    
+    _fadeAnimation = CurvedAnimation(
+      parent: _entranceController,
+      curve: Curves.easeIn,
+    );
+    
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0.0, 0.05),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _entranceController,
+      curve: Curves.easeOutCubic,
+    ));
+
     // Fetch latest states
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<UserProvider>(context, listen: false).loadUser();
@@ -27,6 +50,14 @@ class _HomeDashboardState extends State<HomeDashboard> {
       Provider.of<VitalsProvider>(context, listen: false).loadVitals();
       Provider.of<MedicineProvider>(context, listen: false).loadMedicines();
     });
+
+    _entranceController.forward();
+  }
+
+  @override
+  void dispose() {
+    _entranceController.dispose();
+    super.dispose();
   }
 
   String _getInitials(String name) {
@@ -116,54 +147,60 @@ class _HomeDashboardState extends State<HomeDashboard> {
             ),
           ),
           Expanded(
-            child: RefreshIndicator(
-              onRefresh: () async {
-                await userProvider.loadUser();
-                await vitalsProvider.loadTodayVitals();
-                await vitalsProvider.loadVitals();
-                await medicineProvider.loadMedicines();
-              },
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.all(MediTrackSpacing.screenHorizontalPadding),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Section 1 - Today's Vitals
-                    _buildSectionHeader(
-                      context: context,
-                      title: "Today's Vitals",
-                      actionText: "Log Now →",
-                      onActionTap: () => Navigator.pushNamed(context, '/vitals/log'),
-                    ),
-                    const SizedBox(height: MediTrackSpacing.titleToContentGap),
-                    _buildVitalsHorizontalList(context, today, vitalsProvider),
-                    const SizedBox(height: MediTrackSpacing.large),
+            child: FadeTransition(
+              opacity: _fadeAnimation,
+              child: SlideTransition(
+                position: _slideAnimation,
+                child: RefreshIndicator(
+                  onRefresh: () async {
+                    await userProvider.loadUser();
+                    await vitalsProvider.loadTodayVitals();
+                    await vitalsProvider.loadVitals();
+                    await medicineProvider.loadMedicines();
+                  },
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.all(MediTrackSpacing.screenHorizontalPadding),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Section 1 - Today's Vitals
+                        _buildSectionHeader(
+                          context: context,
+                          title: "Today's Vitals",
+                          actionText: "Log Now →",
+                          onActionTap: () => Navigator.pushNamed(context, '/vitals/log'),
+                        ),
+                        const SizedBox(height: MediTrackSpacing.titleToContentGap),
+                        _buildVitalsHorizontalList(context, today, vitalsProvider),
+                        const SizedBox(height: MediTrackSpacing.large),
 
-                    // Section 2 - Medicines Due Today
-                    _buildSectionHeader(
-                      context: context,
-                      title: "Medicines Due Today",
-                      actionText: "View All →",
-                      onActionTap: () => Navigator.pushNamed(context, '/medicines'),
-                    ),
-                    const SizedBox(height: MediTrackSpacing.titleToContentGap),
-                    _buildMedicinesList(context, medicineProvider),
-                    const SizedBox(height: MediTrackSpacing.large),
+                        // Section 2 - Medicines Due Today
+                        _buildSectionHeader(
+                          context: context,
+                          title: "Medicines Due Today",
+                          actionText: "View All →",
+                          onActionTap: () => Navigator.pushNamed(context, '/medicines'),
+                        ),
+                        const SizedBox(height: MediTrackSpacing.titleToContentGap),
+                        _buildMedicinesList(context, medicineProvider),
+                        const SizedBox(height: MediTrackSpacing.large),
 
-                    // Section 3 - Quick Actions
-                    Text(
-                      'Quick Actions',
-                      style: context.titleMedium,
-                    ),
-                    const SizedBox(height: MediTrackSpacing.titleToContentGap),
-                    _buildQuickActionsGrid(context),
-                    const SizedBox(height: MediTrackSpacing.large),
+                        // Section 3 - Quick Actions
+                        Text(
+                          'Quick Actions',
+                          style: context.titleMedium,
+                        ),
+                        const SizedBox(height: MediTrackSpacing.titleToContentGap),
+                        _buildQuickActionsGrid(context),
+                        const SizedBox(height: MediTrackSpacing.large),
 
-                    // Section 4 - BP Sparkline
-                    _buildBPSparklineCard(context, vitalsProvider.vitals),
-                    const SizedBox(height: 80), // padding for bottom SOS FAB
-                  ],
+                        // Section 4 - BP Sparkline
+                        _buildBPSparklineCard(context, vitalsProvider.vitals),
+                        const SizedBox(height: 80), // padding for bottom SOS FAB
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ),

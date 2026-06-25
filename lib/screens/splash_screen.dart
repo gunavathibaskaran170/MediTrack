@@ -10,16 +10,53 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> {
+class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
+  late AnimationController _heartController;
+  late Animation<double> _scaleAnimation;
+
   @override
   void initState() {
     super.initState();
+    _heartController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+    )..repeat();
+
+    _scaleAnimation = TweenSequence<double>([
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 1.0, end: 1.18)
+            .chain(CurveTween(curve: Curves.easeOut)),
+        weight: 15,
+      ),
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 1.18, end: 1.0)
+            .chain(CurveTween(curve: Curves.easeIn)),
+        weight: 15,
+      ),
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 1.0, end: 1.25)
+            .chain(CurveTween(curve: Curves.easeOut)),
+        weight: 20,
+      ),
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 1.25, end: 1.0)
+            .chain(CurveTween(curve: Curves.easeIn)),
+        weight: 50,
+      ),
+    ]).animate(_heartController);
+
     _navigateToNext();
   }
 
+  @override
+  void dispose() {
+    _heartController.dispose();
+    super.dispose();
+  }
+
   Future<void> _navigateToNext() async {
-    // 1. Wait for 1500ms
-    await Future.delayed(const Duration(milliseconds: 1500));
+    // 1. Wait for 1800ms to allow a full heartbeat cycle to play
+    await Future.delayed(const Duration(milliseconds: 1800));
 
     // 2. Initialize DB and seed demo data on first launch
     try {
@@ -49,10 +86,13 @@ class _SplashScreenState extends State<SplashScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.monitor_heart,
-              size: 100,
-              color: context.colors.primary,
+            ScaleTransition(
+              scale: _scaleAnimation,
+              child: Icon(
+                Icons.monitor_heart,
+                size: 100,
+                color: context.colors.primary,
+              ),
             ),
             const SizedBox(height: MediTrackSpacing.large),
             Text(
