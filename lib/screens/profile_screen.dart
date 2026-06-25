@@ -12,6 +12,7 @@ import '../providers/medicine_provider.dart';
 import '../providers/analytics_provider.dart';
 import '../core/database_helper.dart';
 import '../services/notification_service.dart';
+import 'sos_history.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -152,6 +153,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
               subtitle: Text(user?.ecName != null ? '${user!.ecName} (${user.ecPhone ?? ""})' : 'None entered', style: context.bodySmall),
               trailing: Icon(Icons.arrow_forward_ios, size: 16, color: context.colors.textSecondary),
               onTap: () => Navigator.pushNamed(context, '/profile/edit'),
+            ),
+            ListTile(
+              leading: Icon(Icons.local_hospital, color: context.colors.primary),
+              title: Text('Hospital Phone', style: context.bodyMedium),
+              subtitle: Text(user?.hospitalPhone ?? 'None entered', style: context.bodySmall),
+              trailing: Icon(Icons.arrow_forward_ios, size: 16, color: context.colors.textSecondary),
+              onTap: () => Navigator.pushNamed(context, '/profile/edit'),
+            ),
+            ListTile(
+              leading: Icon(Icons.history, color: context.colors.primary),
+              title: Text('SOS Alert History', style: context.bodyMedium),
+              subtitle: Text('View history of emergency alerts triggered', style: context.bodySmall),
+              trailing: Icon(Icons.arrow_forward_ios, size: 16, color: context.colors.textSecondary),
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const SosHistoryScreen())),
             ),
             const Divider(),
 

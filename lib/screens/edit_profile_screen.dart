@@ -19,6 +19,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   final _allergiesController = TextEditingController();
   final _ecNameController = TextEditingController();
   final _ecPhoneController = TextEditingController();
+  final _hospitalPhoneController = TextEditingController();
 
   String? _gender = 'Male';
   String? _bloodGroup = 'O+';
@@ -36,6 +37,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       _allergiesController.text = user.allergies ?? '';
       _ecNameController.text = user.ecName ?? '';
       _ecPhoneController.text = user.ecPhone ?? '';
+      _hospitalPhoneController.text = user.hospitalPhone ?? '';
     }
   }
 
@@ -47,6 +49,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _allergiesController.dispose();
     _ecNameController.dispose();
     _ecPhoneController.dispose();
+    _hospitalPhoneController.dispose();
     super.dispose();
   }
 
@@ -66,6 +69,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       allergies: _allergiesController.text.trim().isNotEmpty ? _allergiesController.text.trim() : null,
       ecName: _ecNameController.text.trim().isNotEmpty ? _ecNameController.text.trim() : null,
       ecPhone: _ecPhoneController.text.trim().isNotEmpty ? _ecPhoneController.text.trim() : null,
+      hospitalPhone: _hospitalPhoneController.text.trim().isNotEmpty ? _hospitalPhoneController.text.trim() : null,
       createdAt: user?.createdAt,
     );
 
@@ -233,6 +237,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 decoration: const InputDecoration(
                   labelText: 'Emergency Contact Phone',
                   prefixIcon: Icon(Icons.phone_outlined),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _hospitalPhoneController,
+                style: context.bodyMedium,
+                decoration: const InputDecoration(
+                  labelText: 'Hospital Phone (optional)',
+                  prefixIcon: Icon(Icons.local_hospital_outlined),
                 ),
               ),
               const SizedBox(height: 40),

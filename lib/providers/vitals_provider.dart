@@ -172,6 +172,13 @@ class VitalsProvider with ChangeNotifier {
     return error; // Stage 2
   }
 
+  Color getBPDiastolicColor(double dia, Color success, Color warning, Color error) {
+    if (dia < 60) return error; // Low
+    if (dia >= 60 && dia <= 79) return success; // Normal
+    if (dia >= 80 && dia <= 89) return warning; // Elevated / Stage 1
+    return error; // Stage 2
+  }
+
   Color getBloodSugarColor(double val, Color success, Color warning, Color error) {
     if (val < 70) return error; // Low
     if (val >= 70 && val <= 99) return success; // Normal
