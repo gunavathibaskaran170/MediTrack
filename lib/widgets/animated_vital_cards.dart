@@ -62,6 +62,8 @@ class _HeartRateVitalCardState extends State<HeartRateVitalCard> with SingleTick
       label: 'Heart Rate',
       statusColor: widget.statusColor,
       valueText: '$hrVal bpm',
+      icon: Icons.monitor_heart,
+      iconBgColor: targetColor,
       chartWidget: RepaintBoundary(
         child: SizedBox(
           width: 80,
@@ -177,6 +179,8 @@ class BPVitalCard extends StatelessWidget {
     return _VitalCardScaffold(
       label: 'Blood Pressure',
       statusColor: statusColor,
+      icon: Icons.biotech_rounded,
+      iconBgColor: sysColor,
       customValueWidget: RichText(
         text: TextSpan(
           style: context.vitalValue.copyWith(fontSize: 16),
@@ -313,6 +317,8 @@ class _BloodSugarVitalCardState extends State<BloodSugarVitalCard> with SingleTi
     return _VitalCardScaffold(
       label: 'Blood Sugar',
       statusColor: widget.statusColor,
+      icon: Icons.water_drop_rounded,
+      iconBgColor: widget.statusColor,
       customValueWidget: Row(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.baseline,
@@ -426,6 +432,8 @@ class TemperatureVitalCard extends StatelessWidget {
       label: 'Temperature',
       statusColor: statusColor,
       valueText: '$tempText °C',
+      icon: Icons.thermostat_rounded,
+      iconBgColor: mercuryColor,
       chartWidget: RepaintBoundary(
         child: SizedBox(
           width: 80,
@@ -563,6 +571,8 @@ class WeightVitalCard extends StatelessWidget {
       label: 'Weight',
       statusColor: statusColor,
       valueText: '$weightText kg',
+      icon: Icons.scale_rounded,
+      iconBgColor: context.colors.primary,
       extraValueWidget: AnimatedSwitcher(
         duration: const Duration(milliseconds: 500),
         transitionBuilder: (Widget child, Animation<double> animation) {
@@ -670,6 +680,8 @@ class SpO2VitalCard extends StatelessWidget {
     return _VitalCardScaffold(
       label: 'SpO2',
       statusColor: statusColor,
+      icon: Icons.air_rounded,
+      iconBgColor: statusColor,
       customValueWidget: RichText(
         text: TextSpan(
           style: context.vitalValue.copyWith(fontSize: 16),
@@ -757,6 +769,8 @@ class _VitalCardScaffold extends StatelessWidget {
   final Widget? customValueWidget;
   final Widget? extraValueWidget;
   final Widget chartWidget;
+  final IconData icon;
+  final Color iconBgColor;
 
   const _VitalCardScaffold({
     required this.label,
@@ -765,28 +779,70 @@ class _VitalCardScaffold extends StatelessWidget {
     this.customValueWidget,
     this.extraValueWidget,
     required this.chartWidget,
+    required this.icon,
+    required this.iconBgColor,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 140,
-      height: 135,
+      width: 144,
+      height: 140,
       margin: const EdgeInsets.only(right: 12),
-      child: Card(
-        margin: EdgeInsets.zero,
-        child: Padding(
-          padding: const EdgeInsets.all(12.0),
-          child: Stack(
-            children: [
-              Column(
+      child: Container(
+        decoration: BoxDecoration(
+          color: context.colors.card,
+          borderRadius: BorderRadius.circular(MediTrackRadius.cards),
+          border: Border.all(color: context.colors.dividerColor, width: 0.8),
+          boxShadow: [
+            BoxShadow(
+              color: statusColor.withOpacity(0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Stack(
+          children: [
+            // Status bar indicator top
+            Positioned(
+              top: 0,
+              left: 12,
+              right: 12,
+              height: 3,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: statusColor,
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(2),
+                    bottomRight: Radius.circular(2),
+                  ),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // Label row
+                  const SizedBox(height: 2), // spacing from status bar
+                  // Top Row: Icon container + Label
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
+                      Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: iconBgColor.withOpacity(0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          icon,
+                          size: 14,
+                          color: iconBgColor,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
                       Expanded(
                         child: Text(
                           label,
@@ -799,31 +855,37 @@ class _VitalCardScaffold extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      Icon(
-                        Icons.circle,
-                        size: 8,
-                        color: statusColor,
-                      ),
                     ],
                   ),
-                  // Custom animated widget
-                  Center(child: chartWidget),
-                  // Value section
+                  // Middle: Chart Widget
+                  Expanded(
+                    child: Center(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4.0),
+                        child: chartWidget,
+                      ),
+                    ),
+                  ),
+                  // Bottom Row: Value + Extra Widget
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       customValueWidget ??
                           Text(
                             valueText ?? '--',
-                            style: context.vitalValue.copyWith(fontSize: 16),
+                            style: context.vitalValue.copyWith(
+                              fontSize: 15,
+                              color: context.colors.textPrimary,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                       if (extraValueWidget != null) extraValueWidget!,
                     ],
                   ),
                 ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
