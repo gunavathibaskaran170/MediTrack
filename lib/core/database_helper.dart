@@ -25,8 +25,9 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: _createDB,
+      onUpgrade: _upgradeDB,
     );
   }
 
@@ -42,6 +43,7 @@ class DatabaseHelper {
         allergies TEXT,
         ec_name TEXT,
         ec_phone TEXT,
+        hospital_phone TEXT,
         created_at TEXT
       )
     ''');
@@ -101,6 +103,8 @@ class DatabaseHelper {
         symptom_name TEXT,
         severity INTEGER,
         notes TEXT,
+        body_region TEXT,
+        duration TEXT,
         created_at TEXT
       )
     ''');
@@ -130,6 +134,49 @@ class DatabaseHelper {
         created_at TEXT
       )
     ''');
+
+    await db.execute('''
+      CREATE TABLE sos_logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER,
+        timestamp TEXT,
+        contact_notified TEXT,
+        sms_sent INTEGER,
+        call_initiated INTEGER,
+        notes TEXT
+      )
+    ''');
+  }
+
+  Future<void> _upgradeDB(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      try {
+        await db.execute('ALTER TABLE users ADD COLUMN hospital_phone TEXT');
+      } catch (e) {
+        debugPrint("Error migrating users hospital_phone: $e");
+      }
+      try {
+        await db.execute('ALTER TABLE symptoms ADD COLUMN body_region TEXT');
+        await db.execute('ALTER TABLE symptoms ADD COLUMN duration TEXT');
+      } catch (e) {
+        debugPrint("Error migrating symptoms body_region/duration: $e");
+      }
+      try {
+        await db.execute('''
+          CREATE TABLE sos_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            timestamp TEXT,
+            contact_notified TEXT,
+            sms_sent INTEGER,
+            call_initiated INTEGER,
+            notes TEXT
+          )
+        ''');
+      } catch (e) {
+        debugPrint("Error creating sos_logs table: $e");
+      }
+    }
   }
 
   // --- USER OPERATIONS ---
@@ -276,6 +323,16 @@ class DatabaseHelper {
   Future<int> insertDoctorVisit(DoctorVisit visit) async {
     final db = await database;
     return await db.insert('doctor_visits', visit.toMap());
+  }
+
+  Future<int> updateDoctorVisit(DoctorVisit visit) async {
+    final db = await database;
+    return await db.update(
+      'doctor_visits',
+      visit.toMap(),
+      where: 'id = ?',
+      whereArgs: [visit.id],
+    );
   }
 
   Future<int> deleteDoctorVisit(int id) async {
@@ -510,5 +567,17 @@ class DatabaseHelper {
       'actual_time': actual,
       'status': status
     });
+  }
+
+  // --- SOS LOG OPERATIONS ---
+  Future<List<SosLog>> getSosLogs() async {
+    final db = await database;
+    final maps = await db.query('sos_logs', orderBy: 'timestamp DESC');
+    return maps.map((m) => SosLog.fromMap(m)).toList();
+  }
+
+  Future<int> insertSosLog(SosLog log) async {
+    final db = await database;
+    return await db.insert('sos_logs', log.toMap());
   }
 }

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../theme/meditrack_theme.dart';
 import '../providers/user_provider.dart';
 import '../providers/medicine_provider.dart';
 import '../services/sos_service.dart';
 import '../core/models.dart';
+import '../core/database_helper.dart';
 
 class EmergencySosScreen extends StatefulWidget {
   const EmergencySosScreen({super.key});
@@ -15,6 +17,7 @@ class EmergencySosScreen extends StatefulWidget {
 
 class _EmergencySosScreenState extends State<EmergencySosScreen> with SingleTickerProviderStateMixin {
   late AnimationController _pulseController;
+  bool _isTriggering = false;
 
   @override
   void initState() {
@@ -44,9 +47,6 @@ class _EmergencySosScreenState extends State<EmergencySosScreen> with SingleTick
     final user = userProvider.currentUser;
     final medicines = medProvider.medicines;
 
-    final ecName = user?.ecName ?? 'Sarah Doe (Wife)';
-    final ecPhone = user?.ecPhone ?? '+1 (555) 019-2834';
-
     return Scaffold(
       backgroundColor: context.colors.background,
       appBar: AppBar(
@@ -62,12 +62,14 @@ class _EmergencySosScreenState extends State<EmergencySosScreen> with SingleTick
         child: Column(
           children: [
             const SizedBox(height: 16),
-            _buildSOSButtonSection(context, ecName, ecPhone),
+            _buildSOSButtonSection(context, user, medicines),
             const SizedBox(height: 40),
             _buildMedicalProfileCard(context, user, medicines),
             const SizedBox(height: 24),
             OutlinedButton.icon(
               onPressed: () async {
+                final ecName = user?.ecName ?? 'Sarah Doe (Wife)';
+                final ecPhone = user?.ecPhone ?? '+1 (555) 019-2834';
                 final dummyUser = user ?? User(name: 'Rajan Kumar', ecName: ecName, ecPhone: ecPhone);
                 await SosService.shareMedicalProfile(context, dummyUser, medicines);
               },
@@ -85,7 +87,112 @@ class _EmergencySosScreenState extends State<EmergencySosScreen> with SingleTick
     );
   }
 
-  Widget _buildSOSButtonSection(BuildContext context, String ecName, String ecPhone) {
+  Future<void> _triggerSosAlert(User? user, List<Medicine> medicines) async {
+    if (user == null || user.ecPhone == null || user.ecPhone!.trim().isEmpty) {
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('No Contact Set'),
+          content: const Text('Please add an emergency contact in your Profile before triggering SOS.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text(
+          'Trigger SOS Alert?',
+          style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+        ),
+        content: Text(
+          'This will:\n'
+          '1. Log this emergency offline.\n'
+          '2. Simulate sending emergency SMS alerts to ${user.ecName} (${user.ecPhone})'
+          '${user.hospitalPhone != null ? ' and your Hospital (${user.hospitalPhone})' : ''}.\n'
+          '3. Open the phone dialer to call ${user.ecName}.'
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('Cancel', style: TextStyle(color: context.colors.textSecondary)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Trigger Alert', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    setState(() {
+      _isTriggering = true;
+    });
+
+    try {
+      // Simulate SMS alert broadcast delay
+      await Future.delayed(const Duration(milliseconds: 1500));
+
+      final todayStr = DateTime.now().toIso8601String();
+      final contactsText = '${user.ecName} (${user.ecPhone})'
+          '${user.hospitalPhone != null ? ', Hospital (${user.hospitalPhone})' : ''}';
+
+      final log = SosLog(
+        timestamp: todayStr,
+        contactNotified: contactsText,
+        smsSent: true,
+        callInitiated: true,
+        notes: 'SOS triggered from dashboard. Medical profile shared: name: ${user.name}, blood: ${user.bloodGroup ?? "O+"}.',
+      );
+
+      // Insert log
+      await DatabaseHelper.instance.insertSosLog(log);
+
+      // Dial contact
+      final cleanPhone = user.ecPhone!.replaceAll(RegExp(r'[^\d+]'), '');
+      final Uri telUri = Uri(scheme: 'tel', path: cleanPhone);
+      if (await canLaunchUrl(telUri)) {
+        await launchUrl(telUri);
+      } else {
+        throw 'Could not open phone dialer';
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✓ SOS Alert dispatched and logged successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint("Error executing SOS: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error triggering dialer: $e. SOS was logged.')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isTriggering = false;
+        });
+      }
+    }
+  }
+
+  Widget _buildSOSButtonSection(BuildContext context, User? user, List<Medicine> medicines) {
+    final displayName = user?.ecName ?? 'Emergency Contact';
     return Center(
       child: Column(
         children: [
@@ -109,9 +216,7 @@ class _EmergencySosScreenState extends State<EmergencySosScreen> with SingleTick
                     ),
                   ),
                   GestureDetector(
-                    onTap: () async {
-                      await SosService.callEmergencyContact(context, ecName, ecPhone);
-                    },
+                    onTap: _isTriggering ? null : () => _triggerSosAlert(user, medicines),
                     child: Container(
                       width: 140,
                       height: 140,
@@ -129,15 +234,19 @@ class _EmergencySosScreenState extends State<EmergencySosScreen> with SingleTick
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(Icons.phone_in_talk, size: 48, color: Colors.white),
-                          const SizedBox(height: 8),
-                          Text(
-                            'SOS',
-                            style: context.displayLarge.copyWith(
-                              color: Colors.white,
-                              fontSize: 18,
+                          if (_isTriggering)
+                            const CircularProgressIndicator(color: Colors.white)
+                          else ...[
+                            const Icon(Icons.phone_in_talk, size: 48, color: Colors.white),
+                            const SizedBox(height: 8),
+                            Text(
+                              'SOS',
+                              style: context.displayLarge.copyWith(
+                                color: Colors.white,
+                                fontSize: 18,
+                              ),
                             ),
-                          ),
+                          ],
                         ],
                       ),
                     ),
@@ -148,7 +257,7 @@ class _EmergencySosScreenState extends State<EmergencySosScreen> with SingleTick
           ),
           const SizedBox(height: 16),
           Text(
-            'Tap to call $ecName',
+            _isTriggering ? 'Dispatching alert...' : 'Tap to call $displayName',
             style: context.bodyMedium.copyWith(fontWeight: FontWeight.w500),
           ),
         ],

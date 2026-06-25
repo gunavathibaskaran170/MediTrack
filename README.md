@@ -1,21 +1,4 @@
-<<<<<<< HEAD
-# meditrack
 
-A new Flutter project.
-
-## Getting Started
-
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
-=======
 # 🏥 MediTrack
 
 > Your Personal Health Tracking & Medication Management Companion
@@ -32,10 +15,7 @@ samples, guidance on mobile development, and a full API reference.
 ## 📋 Overview
 
 **MediTrack** is a comprehensive HealthTech mobile application designed to help individuals manage chronic health conditions, medication schedules, vital records, doctor visits, prescriptions, and emergency situations — all from a single platform.
-
 MediTrack acts as a digital health companion that assists users in maintaining their healthcare routine through smart reminders, tracking systems, visual analytics, and PDF report generation.
-
-> ⚠️ **Disclaimer:** MediTrack is not a diagnostic tool and does not provide medical advice. Its purpose is to improve health management, medication adherence, and record keeping.
 
 ---
 
@@ -249,4 +229,3 @@ flutter run
 ## 📃 License
 
 This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
->>>>>>> 823fb2a8082c06c233c094ddcdb9c4622408e8b3

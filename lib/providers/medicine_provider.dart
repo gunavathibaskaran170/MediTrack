@@ -4,10 +4,29 @@ import '../core/models.dart';
 import '../core/database_helper.dart';
 import '../services/notification_service.dart';
 
+class DueDose {
+  final int medicineId;
+  final String medicineName;
+  final double dosage;
+  final String unit;
+  final String scheduledTime;
+  final bool isOverdue;
+
+  DueDose({
+    required this.medicineId,
+    required this.medicineName,
+    required this.dosage,
+    required this.unit,
+    required this.scheduledTime,
+    required this.isOverdue,
+  });
+}
+
 class MedicineProvider with ChangeNotifier {
   List<Medicine> _medicines = [];
   List<Medicine> _todayMedicines = [];
   List<MedicationLog> _todayLogs = [];
+  List<DueDose> _todayDueMedicines = [];
   double _weeklyAdherence = 0.0;
   int _takenThisWeek = 0;
   int _missedThisWeek = 0;
@@ -16,6 +35,7 @@ class MedicineProvider with ChangeNotifier {
   List<Medicine> get medicines => _medicines;
   List<Medicine> get todayMedicines => _todayMedicines;
   List<MedicationLog> get todayLogs => _todayLogs;
+  List<DueDose> get todayDueMedicines => _todayDueMedicines;
   double get weeklyAdherence => _weeklyAdherence;
   int get takenThisWeek => _takenThisWeek;
   int get missedThisWeek => _missedThisWeek;
@@ -30,6 +50,7 @@ class MedicineProvider with ChangeNotifier {
       await loadTodayMedicines();
       await loadTodayLogs();
       await loadWeeklyAdherence();
+      await loadTodayDueMedicines();
     } catch (e) {
       debugPrint("Error loading medicines: $e");
     } finally {
@@ -148,6 +169,56 @@ class MedicineProvider with ChangeNotifier {
     }
   }
 
+  Future<void> loadTodayDueMedicines() async {
+    final now = DateTime.now();
+    final List<DueDose> list = [];
+
+    // Ensure todayLogs and medicines are loaded
+    await loadTodayLogs();
+
+    for (var med in _medicines) {
+      if (!med.isActive) continue;
+
+      for (var timeStr in med.reminderTimes) {
+        // Cross-check against logs
+        final logged = _todayLogs.any((l) =>
+            l.medicineId == med.id &&
+            l.scheduledTime == timeStr &&
+            (l.status == 'taken' || l.status == 'skipped'));
+
+        if (logged) continue;
+
+        try {
+          final parts = timeStr.split(':');
+          final hour = int.parse(parts[0]);
+          final min = int.parse(parts[1]);
+          final scheduledDateTime = DateTime(now.year, now.month, now.day, hour, min);
+
+          // We return doses scheduled today that are either:
+          // 1. Overdue (scheduledDateTime < now) OR
+          // 2. Due soon (scheduledDateTime >= now && scheduledDateTime <= now + 120min)
+          final dueLimit = now.add(const Duration(minutes: 120));
+          if (scheduledDateTime.isBefore(dueLimit)) {
+            final isOverdue = scheduledDateTime.isBefore(now);
+            list.add(DueDose(
+              medicineId: med.id ?? 0,
+              medicineName: med.name,
+              dosage: med.dosage ?? 0.0,
+              unit: med.unit ?? '',
+              scheduledTime: timeStr,
+              isOverdue: isOverdue,
+            ));
+          }
+        } catch (_) {}
+      }
+    }
+
+    // Sort list by scheduled time ascending
+    list.sort((a, b) => a.scheduledTime.compareTo(b.scheduledTime));
+    _todayDueMedicines = list;
+    notifyListeners();
+  }
+
   // --- LOG DOSE ---
   Future<void> logDose(int medicineId, String time, String status) async {
     try {
@@ -175,6 +246,7 @@ class MedicineProvider with ChangeNotifier {
 
       await loadTodayLogs();
       await loadWeeklyAdherence();
+      await loadTodayDueMedicines();
     } catch (e) {
       debugPrint("Error logging dose: $e");
     }

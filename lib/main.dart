@@ -17,6 +17,7 @@ import 'providers/user_provider.dart';
 import 'providers/vitals_provider.dart';
 import 'providers/medicine_provider.dart';
 import 'providers/analytics_provider.dart';
+import 'providers/doctor_visits_provider.dart';
 import 'services/notification_service.dart';
 
 void main() async {
@@ -37,6 +38,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => VitalsProvider()..loadVitals()..loadTodayVitals()),
         ChangeNotifierProvider(create: (_) => MedicineProvider()..loadMedicines()),
         ChangeNotifierProvider(create: (_) => AnalyticsProvider()..loadAnalytics()),
+        ChangeNotifierProvider(create: (_) => DoctorVisitsProvider()..loadAll()),
       ],
       child: const MediTrackApp(),
     ),

@@ -10,6 +10,7 @@ class User {
   final String? allergies;
   final String? ecName;
   final String? ecPhone;
+  final String? hospitalPhone;
   final String? createdAt;
 
   User({
@@ -22,6 +23,7 @@ class User {
     this.allergies,
     this.ecName,
     this.ecPhone,
+    this.hospitalPhone,
     this.createdAt,
   });
 
@@ -36,6 +38,7 @@ class User {
       'allergies': allergies,
       'ec_name': ecName,
       'ec_phone': ecPhone,
+      'hospital_phone': hospitalPhone,
       'created_at': createdAt ?? DateTime.now().toIso8601String(),
     };
   }
@@ -51,6 +54,7 @@ class User {
       allergies: map['allergies'] as String?,
       ecName: map['ec_name'] as String?,
       ecPhone: map['ec_phone'] as String?,
+      hospitalPhone: map['hospital_phone'] as String?,
       createdAt: map['created_at'] as String?,
     );
   }
@@ -244,6 +248,8 @@ class Symptom {
   final String? symptomName;
   final int? severity; // 1=Mild, 2=Moderate, 3=Severe
   final String? notes;
+  final String? bodyRegion; // Head, Chest, Stomach, Limbs, General
+  final String? duration;   // A few minutes / Hours / Full day / Multiple days
   final String? createdAt;
 
   Symptom({
@@ -254,6 +260,8 @@ class Symptom {
     this.symptomName,
     this.severity,
     this.notes,
+    this.bodyRegion,
+    this.duration,
     this.createdAt,
   });
 
@@ -266,6 +274,8 @@ class Symptom {
       'symptom_name': symptomName,
       'severity': severity,
       'notes': notes,
+      'body_region': bodyRegion,
+      'duration': duration,
       'created_at': createdAt ?? DateTime.now().toIso8601String(),
     };
   }
@@ -279,6 +289,8 @@ class Symptom {
       symptomName: map['symptom_name'] as String?,
       severity: map['severity'] as int?,
       notes: map['notes'] as String?,
+      bodyRegion: map['body_region'] as String?,
+      duration: map['duration'] as String?,
       createdAt: map['created_at'] as String?,
     );
   }
@@ -376,6 +388,50 @@ class Prescription {
       visitDate: map['visit_date'] as String?,
       notes: map['notes'] as String?,
       createdAt: map['created_at'] as String?,
+    );
+  }
+}
+
+class SosLog {
+  final int? id;
+  final int? userId;
+  final String timestamp;
+  final String? contactNotified;
+  final bool smsSent;
+  final bool callInitiated;
+  final String? notes;
+
+  SosLog({
+    this.id,
+    this.userId,
+    required this.timestamp,
+    this.contactNotified,
+    required this.smsSent,
+    required this.callInitiated,
+    this.notes,
+  });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'user_id': userId ?? 1,
+      'timestamp': timestamp,
+      'contact_notified': contactNotified,
+      'sms_sent': smsSent ? 1 : 0,
+      'call_initiated': callInitiated ? 1 : 0,
+      'notes': notes,
+    };
+  }
+
+  factory SosLog.fromMap(Map<String, dynamic> map) {
+    return SosLog(
+      id: map['id'] as int?,
+      userId: map['user_id'] as int?,
+      timestamp: map['timestamp'] as String,
+      contactNotified: map['contact_notified'] as String?,
+      smsSent: (map['sms_sent'] as int?) == 1,
+      callInitiated: (map['call_initiated'] as int?) == 1,
+      notes: map['notes'] as String?,
     );
   }
 }

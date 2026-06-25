@@ -280,6 +280,10 @@ class NotificationService {
     );
   }
 
+  Future<void> cancelDailyVitalsReminder() async {
+    await _plugin.cancel(9999);
+  }
+
   /// Cancels all notifications for a specific medicine
   Future<void> cancelMedicineReminders(int medicineId) async {
     // Cancel dose reminders and missed alerts
@@ -291,6 +295,11 @@ class NotificationService {
       await _plugin.cancel(medicineId * 100 + hour);
       await _plugin.cancel(medicineId * 1000 + hour);
     }
+  }
+
+  /// Cancels an appointment follow-up reminder
+  Future<void> cancelAppointmentReminder(int visitId) async {
+    await _plugin.cancel(visitId * 10);
   }
 
   /// Cancels all scheduled local notifications
