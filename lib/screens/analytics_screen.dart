@@ -72,8 +72,13 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> with SingleTickerProv
       appBar: AppBar(
         backgroundColor: context.colors.background,
         title: Text('Health Analytics', style: context.titleLarge),
-        actions: const [
-          SizedBox(width: MediTrackSpacing.screenHorizontalPadding),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.picture_as_pdf_outlined),
+            tooltip: 'Print Health Summary',
+            onPressed: () => Navigator.pushNamed(context, '/reports'),
+          ),
+          const SizedBox(width: MediTrackSpacing.screenHorizontalPadding),
         ],
         bottom: TabBar(
           controller: _tabController,
@@ -96,9 +101,15 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> with SingleTickerProv
                 children: [
                   // 1. Hospital Vitals Checkup Comparison
                   if (hasCheckup) ...[
-                    Text(
-                      'Hospital Vitals Comparison',
-                      style: context.titleMedium,
+                    Row(
+                      children: [
+                        Icon(Icons.compare_arrows_rounded, size: 18, color: context.colors.primary),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Checkup Vitals — Current vs Previous',
+                          style: context.titleMedium.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: MediTrackSpacing.titleToContentGap),
                     _buildPatientProfileBanner(context, user),
@@ -107,21 +118,37 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> with SingleTickerProv
                     const SizedBox(height: 16),
                     _buildInteractiveVitalsGrid(context, current, previous, vitalsProvider),
                     const SizedBox(height: MediTrackSpacing.sectionGap),
+                    const Divider(thickness: 1),
+                    const SizedBox(height: MediTrackSpacing.sectionGap),
                   ],
 
-                  // 2. Trend Graphs and Stats
-                  Text(
-                    'Historical Trend Charts',
-                    style: context.titleMedium,
+                  // 2. Historical Trend Charts
+                  Row(
+                    children: [
+                      Icon(Icons.show_chart_rounded, size: 18, color: context.colors.primary),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Historical Trend Charts',
+                        style: context.titleMedium.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: MediTrackSpacing.titleToContentGap),
                   _buildBPTrendCard(context, data),
                   const SizedBox(height: MediTrackSpacing.sectionGap),
                   _buildBloodSugarCard(context, data),
                   const SizedBox(height: MediTrackSpacing.sectionGap),
-                  Text(
-                    'Key Metric Averages',
-                    style: context.titleMedium,
+
+                  // 3. Average Metrics
+                  Row(
+                    children: [
+                      Icon(Icons.bar_chart_rounded, size: 18, color: context.colors.primary),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Key Metric Averages',
+                        style: context.titleMedium.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: MediTrackSpacing.titleToContentGap),
                   _buildStatsGrid(context, data),

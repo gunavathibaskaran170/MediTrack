@@ -414,9 +414,6 @@ class _HomeDashboardState extends State<HomeDashboard>
                             ],
                           );
 
-                          final Widget bpSparklineWidget = _buildBPSparklineCard(
-                              context, vitalsProvider.vitals);
-
                           final Widget medicinesWidget = Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -452,8 +449,6 @@ class _HomeDashboardState extends State<HomeDashboard>
                                       vitalsWidget,
                                       const SizedBox(height: MediTrackSpacing.large),
                                       quickActionsWidget,
-                                      const SizedBox(height: MediTrackSpacing.large),
-                                      bpSparklineWidget,
                                     ],
                                   ),
                                 ),
@@ -475,8 +470,6 @@ class _HomeDashboardState extends State<HomeDashboard>
                               medicinesWidget,
                               const SizedBox(height: MediTrackSpacing.large),
                               quickActionsWidget,
-                              const SizedBox(height: MediTrackSpacing.large),
-                              bpSparklineWidget,
                               const SizedBox(height: 80),
                             ],
                           );
