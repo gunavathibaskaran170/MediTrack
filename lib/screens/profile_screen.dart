@@ -1,6 +1,9 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:qr_flutter/qr_flutter.dart';
+import '../core/models.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
@@ -117,6 +120,58 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
     }
+  }
+
+  void _showChangeHospitalDialog(User? user, UserProvider provider) {
+    final hospitals = ['Apollo Hospital', 'Fortis Medical Center', 'Max Healthcare', 'General Clinic'];
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Change Connected Hospital'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: hospitals.map((h) {
+              return ListTile(
+                title: Text(h),
+                leading: Icon(Icons.local_hospital_outlined, color: context.colors.primary),
+                onTap: () async {
+                  if (user != null) {
+                    final updatedUser = User(
+                      id: user.id,
+                      name: user.name,
+                      age: user.age,
+                      gender: user.gender,
+                      bloodGroup: user.bloodGroup,
+                      conditions: user.conditions,
+                      allergies: user.allergies,
+                      ecName: user.ecName,
+                      ecPhone: user.ecPhone,
+                      hospitalPhone: user.hospitalPhone,
+                      createdAt: user.createdAt,
+                      profession: user.profession,
+                      organization: user.organization,
+                      workEmail: user.workEmail,
+                      workPhone: user.workPhone,
+                      bio: user.bio,
+                      connectedHospital: h,
+                    );
+                    await provider.updateUser(updatedUser);
+                  }
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Connected to $h successfully!'),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                },
+              );
+            }).toList(),
+          ),
+        );
+      },
+    );
   }
 
   String _getInitials(String name) {
@@ -354,6 +409,112 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     onTap: () => Navigator.pushNamed(context, '/profile/edit'),
                   ),
                 ],
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            Text(
+              'Hospital Connection Sync',
+              style: context.labelSmall.copyWith(
+                fontWeight: FontWeight.bold,
+                color: context.colors.textSecondary,
+                letterSpacing: 0.5,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Card(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(MediTrackRadius.cards),
+                side: BorderSide(color: context.colors.dividerColor.withOpacity(0.5)),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(14.0),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 20,
+                      backgroundColor: context.colors.primary.withOpacity(0.1),
+                      child: Icon(Icons.local_hospital, color: context.colors.primary),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            user?.connectedHospital ?? 'Apollo Hospital',
+                            style: context.bodyMedium.copyWith(fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Connected & Syncing',
+                            style: const TextStyle(color: Colors.green, fontSize: 11, fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                    ),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                      ),
+                      onPressed: () => _showChangeHospitalDialog(user, userProvider),
+                      child: const Text('Change'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            Text(
+              'Profile Health QR Code',
+              style: context.labelSmall.copyWith(
+                fontWeight: FontWeight.bold,
+                color: context.colors.textSecondary,
+                letterSpacing: 0.5,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Card(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(MediTrackRadius.cards),
+                side: BorderSide(color: context.colors.dividerColor.withOpacity(0.5)),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  children: [
+                    Text(
+                      'Scan to Share Health Profile',
+                      style: context.bodyMedium.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Affiliated doctors can scan this code to load your history instantly.',
+                      textAlign: TextAlign.center,
+                      style: context.bodySmall.copyWith(color: context.colors.textSecondary),
+                    ),
+                    const SizedBox(height: 16),
+                    Center(
+                      child: QrImageView(
+                        data: jsonEncode({
+                          'name': name,
+                          'age': user?.age ?? 58,
+                          'gender': gender,
+                          'bloodGroup': bloodGroup,
+                          'hospital': user?.connectedHospital ?? 'Apollo Hospital',
+                          'conditions': user?.conditions ?? 'Diabetes,Hypertension',
+                          'allergies': user?.allergies ?? 'Penicillin',
+                          'emergency': (user != null && user.ecName != null) ? '${user.ecName} (${user.ecPhone ?? ""})' : 'Priya Kumar (+91-98765-43210)',
+                        }),
+                        version: QrVersions.auto,
+                        size: 160.0,
+                        foregroundColor: context.colors.primary,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
             const SizedBox(height: 20),

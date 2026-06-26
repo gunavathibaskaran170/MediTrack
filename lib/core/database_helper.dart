@@ -41,7 +41,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 3,
+      version: 4,
       onCreate: _createDB,
       onUpgrade: _upgradeDB,
     );
@@ -65,7 +65,8 @@ class DatabaseHelper {
         organization TEXT,
         work_email TEXT,
         work_phone TEXT,
-        bio TEXT
+        bio TEXT,
+        connected_hospital TEXT
       )
     ''');
 
@@ -219,6 +220,13 @@ class DatabaseHelper {
         debugPrint("Error migrating medicines care instructions: $e");
       }
     }
+    if (oldVersion < 4) {
+      try {
+        await db.execute('ALTER TABLE users ADD COLUMN connected_hospital TEXT');
+      } catch (e) {
+        debugPrint("Error migrating users connected_hospital field: $e");
+      }
+    }
   }
 
   // --- WEB FALLBACK HELPERS ---
@@ -245,6 +253,7 @@ class DatabaseHelper {
         workEmail: 'rajan.kumar@apollo.com',
         workPhone: '+91-98765-99999',
         bio: 'Passionate about healthcare tech and patient monitoring systems. Managing medications diligently.',
+        connectedHospital: 'Apollo Hospital',
       );
     }
     return null;

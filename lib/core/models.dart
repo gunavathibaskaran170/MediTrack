@@ -17,6 +17,7 @@ class User {
   final String? workEmail;
   final String? workPhone;
   final String? bio;
+  final String? connectedHospital;
 
   User({
     this.id,
@@ -35,6 +36,7 @@ class User {
     this.workEmail,
     this.workPhone,
     this.bio,
+    this.connectedHospital,
   });
 
   Map<String, dynamic> toMap() {
@@ -55,6 +57,7 @@ class User {
       'work_email': workEmail,
       'work_phone': workPhone,
       'bio': bio,
+      'connected_hospital': connectedHospital,
     };
   }
 
@@ -76,6 +79,7 @@ class User {
       workEmail: map['work_email'] as String?,
       workPhone: map['work_phone'] as String?,
       bio: map['bio'] as String?,
+      connectedHospital: map['connected_hospital'] as String?,
     );
   }
 }

@@ -8,6 +8,7 @@ import '../core/models.dart';
 import '../core/database_helper.dart';
 import '../providers/analytics_provider.dart';
 import 'doctor_visits.dart';
+import 'package:lottie/lottie.dart';
 
 class SymptomDiaryScreen extends StatefulWidget {
   const SymptomDiaryScreen({super.key});
@@ -293,9 +294,22 @@ class _SymptomDiaryScreenState extends State<SymptomDiaryScreen> {
                 Expanded(
                   child: filteredList.isEmpty
                       ? Center(
-                          child: Text(
-                            'No matching symptoms found',
-                            style: context.bodyMedium.copyWith(color: context.colors.textSecondary),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              SizedBox(
+                                height: 120,
+                                child: Lottie.network(
+                                  'https://lottie.host/a82d02c7-063a-4f51-b847-197e415fb5ba/xVd2qG8qA9.json',
+                                  fit: BoxFit.contain,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'No matching symptoms found',
+                                style: context.bodyMedium.copyWith(color: context.colors.textSecondary),
+                              ),
+                            ],
                           ),
                         )
                       : ListView.builder(

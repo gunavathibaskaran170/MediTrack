@@ -87,25 +87,15 @@ class _LoginScreenState extends State<LoginScreen> {
                   Hero(
                     tag: 'app_logo',
                     child: Container(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: context.colors.primary.withOpacity(0.1),
-                        shape: BoxShape.circle,
+                        color: context.colors.primary.withOpacity(0.06),
+                        borderRadius: BorderRadius.circular(20),
                       ),
-                      child: SizedBox(
-                        width: 64,
-                        height: 64,
-                        child: Lottie.network(
-                          'https://lottie.host/8cd87532-68c3-4d43-a616-24e6503c1535/vA8T3iJplD.json',
-                          fit: BoxFit.contain,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Icon(
-                              Icons.monitor_heart,
-                              size: 64,
-                              color: context.colors.primary,
-                            );
-                          },
-                        ),
+                      child: Image.asset(
+                        'assets/login_illustration.png',
+                        height: 180,
+                        fit: BoxFit.contain,
                       ),
                     ),
                   ),
@@ -283,6 +273,23 @@ class _LoginScreenState extends State<LoginScreen> {
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
+                          ),
+                          const SizedBox(height: 16),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text("Don't have an account? ", style: context.bodySmall),
+                              TextButton(
+                                onPressed: () => Navigator.pushNamed(context, '/signup'),
+                                child: Text(
+                                  'Sign Up',
+                                  style: TextStyle(
+                                    color: context.colors.primary,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),

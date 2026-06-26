@@ -6,6 +6,7 @@ import '../theme/meditrack_theme.dart';
 import '../providers/vitals_provider.dart';
 import '../providers/user_provider.dart';
 import '../core/models.dart';
+import '../widgets/animated_vital_cards.dart';
 
 class VitalsAnalysisScreen extends StatefulWidget {
   const VitalsAnalysisScreen({super.key});
@@ -396,7 +397,7 @@ class _VitalsAnalysisScreenState extends State<VitalsAnalysisScreen> {
       crossAxisCount: crossAxisCount,
       crossAxisSpacing: 14,
       mainAxisSpacing: 14,
-      childAspectRatio: 1.4,
+      childAspectRatio: 1.25,
       children: [
         // Card 1: Blood Pressure
         _buildVitalGridCard(
@@ -429,6 +430,12 @@ class _VitalsAnalysisScreenState extends State<VitalsAnalysisScreen> {
               aiText: aiText,
             );
           },
+          animationWidget: BPDoubleRingGauge(
+            systolic: current.bpSystolic ?? 120.0,
+            diastolic: current.bpDiastolic ?? 80.0,
+            sysColor: context.colors.primary,
+            diaColor: context.colors.accent,
+          ),
         ),
 
         // Card 2: Blood Sugar
@@ -459,6 +466,10 @@ class _VitalsAnalysisScreenState extends State<VitalsAnalysisScreen> {
               aiText: aiText,
             );
           },
+          animationWidget: BloodSugarBeakerAnimation(
+            sugar: current.bloodSugar ?? 94.0,
+            color: context.colors.warning,
+          ),
         ),
 
         // Card 3: Heart Rate
@@ -488,6 +499,10 @@ class _VitalsAnalysisScreenState extends State<VitalsAnalysisScreen> {
               aiText: aiText,
             );
           },
+          animationWidget: HeartRatePulseAnimation(
+            bpm: current.heartRate ?? 72.0,
+            color: context.colors.errorSos,
+          ),
         ),
 
         // Card 4: Blood Oxygen (SpO2)
@@ -517,6 +532,10 @@ class _VitalsAnalysisScreenState extends State<VitalsAnalysisScreen> {
               aiText: aiText,
             );
           },
+          animationWidget: OxygenSatAnimation(
+            spo2: current.spo2 ?? 98.0,
+            color: Colors.teal,
+          ),
         ),
 
         // Card 5: Temperature
@@ -546,6 +565,10 @@ class _VitalsAnalysisScreenState extends State<VitalsAnalysisScreen> {
               aiText: aiText,
             );
           },
+          animationWidget: TemperatureMercuryAnimation(
+            temp: current.temperature ?? 36.6,
+            color: Colors.orange,
+          ),
         ),
 
         // Card 6: Weight
@@ -557,7 +580,7 @@ class _VitalsAnalysisScreenState extends State<VitalsAnalysisScreen> {
           currentVal: current.weight != null ? '${current.weight!.toStringAsFixed(1)}' : '--',
           prevVal: previous?.weight != null ? '${previous!.weight!.toStringAsFixed(1)}' : null,
           unit: 'kg',
-          status: {'text': 'Stable', 'color': Colors.grey},
+          status: const {'text': 'Stable', 'color': Colors.grey},
           onTap: () {
             final double change = previous?.weight != null ? current.weight! - previous!.weight! : 0.0;
             final isGain = change > 0.5;
@@ -579,6 +602,10 @@ class _VitalsAnalysisScreenState extends State<VitalsAnalysisScreen> {
               aiText: aiText,
             );
           },
+          animationWidget: WeightScaleDialAnimation(
+            weight: current.weight ?? 70.0,
+            color: Colors.blueGrey,
+          ),
         ),
       ],
     );
@@ -594,6 +621,7 @@ class _VitalsAnalysisScreenState extends State<VitalsAnalysisScreen> {
     required String unit,
     required Map<String, dynamic> status,
     required VoidCallback onTap,
+    required Widget animationWidget,
   }) {
     final statusText = status['text'] as String;
     final statusColor = status['color'] as Color;
@@ -645,23 +673,47 @@ class _VitalsAnalysisScreenState extends State<VitalsAnalysisScreen> {
                 ],
               ),
               const SizedBox(height: 8),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.baseline,
-                textBaseline: TextBaseline.alphabetic,
-                children: [
-                  Text(currentVal, style: context.vitalValue.copyWith(fontSize: 26, color: color)),
-                  const SizedBox(width: 4),
-                  Text(unit, style: context.vitalUnit),
-                ],
+              Expanded(
+                child: Row(
+                  children: [
+                    Expanded(
+                      flex: 3,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.baseline,
+                            textBaseline: TextBaseline.alphabetic,
+                            children: [
+                              Text(currentVal, style: context.vitalValue.copyWith(fontSize: 26, color: color)),
+                              const SizedBox(width: 4),
+                              Text(unit, style: context.vitalUnit),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            prevVal != null ? 'Prev: $prevVal $unit' : 'Prev: --',
+                            style: context.bodySmall.copyWith(fontSize: 11),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      flex: 2,
+                      child: Center(
+                        child: animationWidget,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              const Divider(height: 16),
+              const SizedBox(height: 8),
+              const Divider(height: 1),
+              const SizedBox(height: 6),
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  Text(
-                    prevVal != null ? 'Prev: $prevVal $unit' : 'Prev: --',
-                    style: context.bodySmall.copyWith(fontSize: 11),
-                  ),
                   Row(
                     children: [
                       Text(

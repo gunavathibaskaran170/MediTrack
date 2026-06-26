@@ -801,8 +801,8 @@ class _VitalCardScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 144,
-      height: 140,
+      width: 168,
+      height: 160,
       margin: const EdgeInsets.only(right: 12),
       child: Container(
         decoration: BoxDecoration(
@@ -1015,7 +1015,7 @@ class _SugarWaveWidgetState extends State<SugarWaveWidget> with SingleTickerProv
             painter: LiquidWavePainter(
               waveValue: _waveController.value,
               fillPercentage: fillPercentage,
-              color: widget.color.withOpacity(0.08),
+              color: widget.color.withOpacity(0.22),
             ),
           );
         },
@@ -1059,4 +1059,649 @@ class LiquidWavePainter extends CustomPainter {
       oldDelegate.waveValue != waveValue ||
       oldDelegate.fillPercentage != fillPercentage ||
       oldDelegate.color != color;
+}
+
+// ----------------------------------------------------
+// STATEFUL MULTI-LAYER VITAL ANIMATIONS
+// ----------------------------------------------------
+
+class HeartRatePulseAnimation extends StatefulWidget {
+  final double bpm;
+  final Color color;
+  const HeartRatePulseAnimation({super.key, required this.bpm, required this.color});
+
+  @override
+  State<HeartRatePulseAnimation> createState() => _HeartRatePulseAnimationState();
+}
+
+class _HeartRatePulseAnimationState extends State<HeartRatePulseAnimation> with TickerProviderStateMixin {
+  late AnimationController _pulseController;
+  late AnimationController _ecgController;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _ecgAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    final bpm = widget.bpm > 0 ? widget.bpm : 72.0;
+    final durationMs = (60000 / bpm).round();
+    
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: Duration(milliseconds: durationMs),
+    )..repeat(reverse: true);
+    
+    _scaleAnimation = Tween<double>(begin: 0.85, end: 1.15).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+
+    _ecgController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    )..repeat();
+    
+    _ecgAnimation = CurvedAnimation(parent: _ecgController, curve: Curves.linear);
+  }
+
+  @override
+  void didUpdateWidget(covariant HeartRatePulseAnimation oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.bpm != widget.bpm) {
+      final bpm = widget.bpm > 0 ? widget.bpm : 72.0;
+      final durationMs = (60000 / bpm).round();
+      _pulseController.duration = Duration(milliseconds: durationMs);
+      _pulseController.repeat(reverse: true);
+    }
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    _ecgController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 70,
+      height: 70,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // Background ECG scrolling line
+          Positioned.fill(
+            child: AnimatedBuilder(
+              animation: _ecgAnimation,
+              builder: (context, child) {
+                return CustomPaint(
+                  painter: HeartbeatPainter(
+                    progress: _ecgAnimation.value,
+                    color: widget.color.withOpacity(0.25),
+                  ),
+                );
+              },
+            ),
+          ),
+          // Pulsing heart icon in foreground
+          ScaleTransition(
+            scale: _scaleAnimation,
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: widget.color.withOpacity(0.12),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: widget.color.withOpacity(0.2),
+                    blurRadius: 8,
+                    spreadRadius: 2,
+                  ),
+                ],
+              ),
+              child: Icon(
+                Icons.favorite_rounded,
+                size: 24,
+                color: widget.color,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class BPDoubleRingGauge extends StatefulWidget {
+  final double systolic;
+  final double diastolic;
+  final Color sysColor;
+  final Color diaColor;
+  const BPDoubleRingGauge({
+    super.key,
+    required this.systolic,
+    required this.diastolic,
+    required this.sysColor,
+    required this.diaColor,
+  });
+
+  @override
+  State<BPDoubleRingGauge> createState() => _BPDoubleRingGaugeState();
+}
+
+class _BPDoubleRingGaugeState extends State<BPDoubleRingGauge> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    );
+    _animation = CurvedAnimation(parent: _controller, curve: Curves.easeOutBack);
+    _controller.forward();
+  }
+
+  @override
+  void didUpdateWidget(covariant BPDoubleRingGauge oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.systolic != widget.systolic || oldWidget.diastolic != widget.diastolic) {
+      _controller.reset();
+      _controller.forward();
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 70,
+      height: 70,
+      child: AnimatedBuilder(
+        animation: _animation,
+        builder: (context, child) {
+          final sysProgress = (widget.systolic / 200.0).clamp(0.0, 1.0) * _animation.value;
+          final diaProgress = (widget.diastolic / 120.0).clamp(0.0, 1.0) * _animation.value;
+          return CustomPaint(
+            painter: BPDoubleRingPainter(
+              sysProgress: sysProgress,
+              diaProgress: diaProgress,
+              sysColor: widget.sysColor,
+              diaColor: widget.diaColor,
+              trackColor: Colors.grey.shade300,
+            ),
+            child: Center(
+              child: Icon(
+                Icons.analytics_outlined,
+                size: 16,
+                color: widget.sysColor,
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class BPDoubleRingPainter extends CustomPainter {
+  final double sysProgress;
+  final double diaProgress;
+  final Color sysColor;
+  final Color diaColor;
+  final Color trackColor;
+
+  BPDoubleRingPainter({
+    required this.sysProgress,
+    required this.diaProgress,
+    required this.sysColor,
+    required this.diaColor,
+    required this.trackColor,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final outerRadius = (size.width / 2) - 3;
+    final innerRadius = outerRadius - 8;
+
+    final trackPaint = Paint()
+      ..color = trackColor.withOpacity(0.4)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3.5;
+
+    final sysPaint = Paint()
+      ..color = sysColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3.5
+      ..strokeCap = StrokeCap.round;
+
+    final diaPaint = Paint()
+      ..color = diaColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3.5
+      ..strokeCap = StrokeCap.round;
+
+    // Draw outer track
+    canvas.drawCircle(center, outerRadius, trackPaint);
+    // Draw outer progress (Systolic)
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: outerRadius),
+      -math.pi / 2,
+      sysProgress * 2 * math.pi,
+      false,
+      sysPaint,
+    );
+
+    // Draw inner track
+    canvas.drawCircle(center, innerRadius, trackPaint);
+    // Draw inner progress (Diastolic)
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: innerRadius),
+      -math.pi / 2,
+      diaProgress * 2 * math.pi,
+      false,
+      diaPaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant BPDoubleRingPainter oldDelegate) =>
+      oldDelegate.sysProgress != sysProgress ||
+      oldDelegate.diaProgress != diaProgress ||
+      oldDelegate.sysColor != sysColor ||
+      oldDelegate.diaColor != diaColor;
+}
+
+class BloodSugarBeakerAnimation extends StatefulWidget {
+  final double sugar;
+  final Color color;
+  const BloodSugarBeakerAnimation({super.key, required this.sugar, required this.color});
+
+  @override
+  State<BloodSugarBeakerAnimation> createState() => _BloodSugarBeakerAnimationState();
+}
+
+class _BloodSugarBeakerAnimationState extends State<BloodSugarBeakerAnimation> with TickerProviderStateMixin {
+  late AnimationController _waveController;
+  late AnimationController _pulseController;
+  late Animation<double> _pulseAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _waveController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat();
+
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat(reverse: true);
+
+    _pulseAnimation = Tween<double>(begin: 0.85, end: 1.15).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _waveController.dispose();
+    _pulseController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final fillPercentage = ((widget.sugar - 40) / 160).clamp(0.15, 0.85);
+    return SizedBox(
+      width: 70,
+      height: 70,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // Background Liquid Circle
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: widget.color.withOpacity(0.3), width: 1.5),
+              color: widget.color.withOpacity(0.04),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(28),
+              child: AnimatedBuilder(
+                animation: _waveController,
+                builder: (context, child) {
+                  return CustomPaint(
+                    painter: LiquidWavePainter(
+                      waveValue: _waveController.value,
+                      fillPercentage: fillPercentage,
+                      color: widget.color.withOpacity(0.25),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+          // Pulsing glucose drop in the center
+          ScaleTransition(
+            scale: _pulseAnimation,
+            child: Icon(
+              Icons.water_drop_rounded,
+              size: 20,
+              color: widget.color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class OxygenSatAnimation extends StatefulWidget {
+  final double spo2;
+  final Color color;
+  const OxygenSatAnimation({super.key, required this.spo2, required this.color});
+
+  @override
+  State<OxygenSatAnimation> createState() => _OxygenSatAnimationState();
+}
+
+class _OxygenSatAnimationState extends State<OxygenSatAnimation> with TickerProviderStateMixin {
+  late AnimationController _breatheController;
+  late Animation<double> _breatheAnimation;
+  late AnimationController _rotateController;
+
+  @override
+  void initState() {
+    super.initState();
+    _breatheController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2500),
+    )..repeat(reverse: true);
+    
+    _breatheAnimation = Tween<double>(begin: 0.9, end: 1.1).animate(
+      CurvedAnimation(parent: _breatheController, curve: Curves.easeInOut),
+    );
+
+    _rotateController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 8),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _breatheController.dispose();
+    _rotateController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 70,
+      height: 70,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // Rotating outer ring with gap
+          RotationTransition(
+            turns: _rotateController,
+            child: CustomPaint(
+              size: const Size(60, 60),
+              painter: RadialProgressPainter(
+                progress: widget.spo2,
+                color: widget.color,
+                trackColor: Colors.grey.shade300,
+              ),
+            ),
+          ),
+          // breathing lung or air icon in the center
+          ScaleTransition(
+            scale: _breatheAnimation,
+            child: Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: widget.color.withOpacity(0.12),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.air_rounded,
+                size: 20,
+                color: widget.color,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class TemperatureMercuryAnimation extends StatefulWidget {
+  final double temp;
+  final Color color;
+  const TemperatureMercuryAnimation({super.key, required this.temp, required this.color});
+
+  @override
+  State<TemperatureMercuryAnimation> createState() => _TemperatureMercuryAnimationState();
+}
+
+class _TemperatureMercuryAnimationState extends State<TemperatureMercuryAnimation> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    );
+    _animation = CurvedAnimation(parent: _controller, curve: Curves.easeInOutCubic);
+    _controller.forward();
+  }
+
+  @override
+  void didUpdateWidget(covariant TemperatureMercuryAnimation oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.temp != widget.temp) {
+      _controller.reset();
+      _controller.forward();
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 70,
+      height: 70,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // Thermometer custom paint
+          AnimatedBuilder(
+            animation: _animation,
+            builder: (context, child) {
+              final animatedTemp = 34.0 + (widget.temp - 34.0) * _animation.value;
+              return Container(
+                width: 32,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: widget.color.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: widget.color.withOpacity(0.15)),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: CustomPaint(
+                  painter: ThermometerPainter(
+                    temp: animatedTemp,
+                    color: widget.color,
+                  ),
+                ),
+              );
+            },
+          ),
+          const SizedBox(width: 4),
+          // Heat waves rising
+          const HeatWavesWidget(),
+        ],
+      ),
+    );
+  }
+}
+
+class HeatWavesWidget extends StatefulWidget {
+  const HeatWavesWidget({super.key});
+
+  @override
+  State<HeatWavesWidget> createState() => _HeatWavesWidgetState();
+}
+
+class _HeatWavesWidgetState extends State<HeatWavesWidget> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 14,
+      height: 44,
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, child) {
+          return CustomPaint(
+            painter: HeatWavePainter(progress: _controller.value),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class HeatWavePainter extends CustomPainter {
+  final double progress;
+  HeatWavePainter({required this.progress});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.orange.withOpacity((1.0 - progress).clamp(0.0, 0.7))
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5
+      ..strokeCap = StrokeCap.round;
+
+    final path = Path();
+    final double h = size.height;
+    final double w = size.width;
+    final double startY = h - (progress * h);
+
+    path.moveTo(w * 0.2, startY);
+    path.quadraticBezierTo(w * 0.8, startY - 6, w * 0.2, startY - 12);
+    path.quadraticBezierTo(w * -0.4, startY - 18, w * 0.4, startY - 24);
+
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant HeatWavePainter oldDelegate) => oldDelegate.progress != progress;
+}
+
+class WeightScaleDialAnimation extends StatefulWidget {
+  final double weight;
+  final Color color;
+  const WeightScaleDialAnimation({super.key, required this.weight, required this.color});
+
+  @override
+  State<WeightScaleDialAnimation> createState() => _WeightScaleDialAnimationState();
+}
+
+class _WeightScaleDialAnimationState extends State<WeightScaleDialAnimation> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1800),
+    );
+    _animation = CurvedAnimation(parent: _controller, curve: Curves.elasticOut);
+    _controller.forward();
+  }
+
+  @override
+  void didUpdateWidget(covariant WeightScaleDialAnimation oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.weight != widget.weight) {
+      _controller.reset();
+      _controller.forward();
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 70,
+      height: 70,
+      child: Container(
+        decoration: BoxDecoration(
+          color: widget.color.withOpacity(0.05),
+          shape: BoxShape.circle,
+          border: Border.all(color: widget.color.withOpacity(0.15)),
+        ),
+        padding: const EdgeInsets.all(6),
+        child: AnimatedBuilder(
+          animation: _animation,
+          builder: (context, child) {
+            final animatedWeight = 40.0 + (widget.weight - 40.0) * _animation.value;
+            return CustomPaint(
+              painter: ScaleNeedlePainter(
+                weight: animatedWeight,
+                needleColor: widget.color,
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
 }

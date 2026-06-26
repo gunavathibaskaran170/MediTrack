@@ -13,6 +13,7 @@ import '../widgets/dialogs.dart';
 import '../core/models.dart';
 import '../core/database_helper.dart';
 import '../providers/doctor_visits_provider.dart';
+import 'package:lottie/lottie.dart';
 
 class DoctorVisitsScreen extends StatefulWidget {
   const DoctorVisitsScreen({super.key});
@@ -534,11 +535,26 @@ ${visit.followUpDate != null ? 'Follow-up Date: ${_formatDate(visit.followUpDate
         if (upcoming.isEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 24.0),
-            child: Center(
-              child: Text(
-                'No upcoming follow-ups! 🎉',
-                style: context.bodyMedium.copyWith(color: context.colors.textSecondary),
-              ),
+            child: Column(
+              children: [
+                SizedBox(
+                  height: 140,
+                  child: Lottie.network(
+                    'https://lottie.host/c5c8e3cc-7257-4148-be2a-fbba2f07d2f4/k5aB5D6G4N.json',
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) => Icon(
+                      Icons.event_available_outlined,
+                      size: 80,
+                      color: context.colors.textHint,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'No upcoming follow-ups! 🎉',
+                  style: context.bodyMedium.copyWith(color: context.colors.textSecondary),
+                ),
+              ],
             ),
           )
         else

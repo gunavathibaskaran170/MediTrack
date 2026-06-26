@@ -61,31 +61,51 @@ class _NavigationShellState extends State<NavigationShell> {
               selectedLabelTextStyle: TextStyle(color: context.colors.primary, fontWeight: FontWeight.bold),
               unselectedLabelTextStyle: TextStyle(color: context.colors.textSecondary),
               labelType: NavigationRailLabelType.all,
-              destinations: const [
+              destinations: [
                 NavigationRailDestination(
-                  icon: Icon(Icons.home_outlined),
-                  selectedIcon: Icon(Icons.home),
-                  label: Text('Home'),
+                  icon: _AnimatedTabIcon(
+                    icon: Icons.home_outlined,
+                    isSelected: _currentIndex == 0,
+                    activeColor: context.colors.primary,
+                    inactiveColor: context.colors.textSecondary,
+                  ),
+                  label: const Text('Home'),
                 ),
                 NavigationRailDestination(
-                  icon: Icon(Icons.favorite_border),
-                  selectedIcon: Icon(Icons.favorite),
-                  label: Text('Vitals'),
+                  icon: _AnimatedTabIcon(
+                    icon: Icons.favorite_border,
+                    isSelected: _currentIndex == 1,
+                    activeColor: context.colors.primary,
+                    inactiveColor: context.colors.textSecondary,
+                  ),
+                  label: const Text('Vitals'),
                 ),
                 NavigationRailDestination(
-                  icon: Icon(Icons.medication_outlined),
-                  selectedIcon: Icon(Icons.medication),
-                  label: Text('Medicines'),
+                  icon: _AnimatedTabIcon(
+                    icon: Icons.medication_outlined,
+                    isSelected: _currentIndex == 2,
+                    activeColor: context.colors.primary,
+                    inactiveColor: context.colors.textSecondary,
+                  ),
+                  label: const Text('Medicines'),
                 ),
                 NavigationRailDestination(
-                  icon: Icon(Icons.bar_chart_outlined),
-                  selectedIcon: Icon(Icons.bar_chart),
-                  label: Text('Analytics'),
+                  icon: _AnimatedTabIcon(
+                    icon: Icons.bar_chart_outlined,
+                    isSelected: _currentIndex == 3,
+                    activeColor: context.colors.primary,
+                    inactiveColor: context.colors.textSecondary,
+                  ),
+                  label: const Text('Analytics'),
                 ),
                 NavigationRailDestination(
-                  icon: Icon(Icons.person_outline),
-                  selectedIcon: Icon(Icons.person),
-                  label: Text('Profile'),
+                  icon: _AnimatedTabIcon(
+                    icon: Icons.person_outline,
+                    isSelected: _currentIndex == 4,
+                    activeColor: context.colors.primary,
+                    inactiveColor: context.colors.textSecondary,
+                  ),
+                  label: const Text('Profile'),
                 ),
               ],
             ),
@@ -119,26 +139,118 @@ class _NavigationShellState extends State<NavigationShell> {
         backgroundColor: context.colors.card,
         items: [
           BottomNavigationBarItem(
-            icon: Icon(_currentIndex == 0 ? Icons.home : Icons.home_outlined),
+            icon: _AnimatedTabIcon(
+              icon: Icons.home_outlined,
+              isSelected: _currentIndex == 0,
+              activeColor: context.colors.primary,
+              inactiveColor: context.colors.textSecondary,
+            ),
             label: 'Home',
           ),
           BottomNavigationBarItem(
-            icon: Icon(_currentIndex == 1 ? Icons.favorite : Icons.favorite_border),
+            icon: _AnimatedTabIcon(
+              icon: Icons.favorite_border,
+              isSelected: _currentIndex == 1,
+              activeColor: context.colors.primary,
+              inactiveColor: context.colors.textSecondary,
+            ),
             label: 'Vitals',
           ),
           BottomNavigationBarItem(
-            icon: Icon(_currentIndex == 2 ? Icons.medication : Icons.medication_outlined),
+            icon: _AnimatedTabIcon(
+              icon: Icons.medication_outlined,
+              isSelected: _currentIndex == 2,
+              activeColor: context.colors.primary,
+              inactiveColor: context.colors.textSecondary,
+            ),
             label: 'Medicines',
           ),
           BottomNavigationBarItem(
-            icon: Icon(_currentIndex == 3 ? Icons.bar_chart : Icons.bar_chart_outlined),
+            icon: _AnimatedTabIcon(
+              icon: Icons.bar_chart_outlined,
+              isSelected: _currentIndex == 3,
+              activeColor: context.colors.primary,
+              inactiveColor: context.colors.textSecondary,
+            ),
             label: 'Analytics',
           ),
           BottomNavigationBarItem(
-            icon: Icon(_currentIndex == 4 ? Icons.person : Icons.person_outline),
+            icon: _AnimatedTabIcon(
+              icon: Icons.person_outline,
+              isSelected: _currentIndex == 4,
+              activeColor: context.colors.primary,
+              inactiveColor: context.colors.textSecondary,
+            ),
             label: 'Profile',
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _AnimatedTabIcon extends StatefulWidget {
+  final IconData icon;
+  final bool isSelected;
+  final Color activeColor;
+  final Color inactiveColor;
+
+  const _AnimatedTabIcon({
+    required this.icon,
+    required this.isSelected,
+    required this.activeColor,
+    required this.inactiveColor,
+  });
+
+  @override
+  State<_AnimatedTabIcon> createState() => _AnimatedTabIconState();
+}
+
+class _AnimatedTabIconState extends State<_AnimatedTabIcon> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 250),
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.25).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOutBack),
+    );
+
+    if (widget.isSelected) {
+      _controller.forward();
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant _AnimatedTabIcon oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isSelected != oldWidget.isSelected) {
+      if (widget.isSelected) {
+        _controller.forward();
+      } else {
+        _controller.reverse();
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ScaleTransition(
+      scale: _scaleAnimation,
+      child: Icon(
+        widget.icon,
+        color: widget.isSelected ? widget.activeColor : widget.inactiveColor,
       ),
     );
   }

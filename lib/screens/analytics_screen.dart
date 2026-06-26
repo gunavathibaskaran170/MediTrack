@@ -7,6 +7,7 @@ import '../providers/vitals_provider.dart';
 import '../providers/user_provider.dart';
 import '../core/models.dart';
 import '../widgets/floating_nodes_background.dart';
+import '../widgets/animated_vital_cards.dart';
 
 class AnalyticsScreen extends StatefulWidget {
   const AnalyticsScreen({super.key});
@@ -15,8 +16,10 @@ class AnalyticsScreen extends StatefulWidget {
   State<AnalyticsScreen> createState() => _AnalyticsScreenState();
 }
 
-class _AnalyticsScreenState extends State<AnalyticsScreen> with SingleTickerProviderStateMixin {
+class _AnalyticsScreenState extends State<AnalyticsScreen> with TickerProviderStateMixin {
   late TabController _tabController;
+  late AnimationController _hrController;
+  late Animation<double> _hrAnimation;
   bool _isSyncing = false;
 
   @override
@@ -24,6 +27,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> with SingleTickerProv
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
     _tabController.addListener(_handleTabSelection);
+    _hrController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    )..repeat();
+    _hrAnimation = CurvedAnimation(parent: _hrController, curve: Curves.linear);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<AnalyticsProvider>(context, listen: false).loadAnalytics();
       Provider.of<VitalsProvider>(context, listen: false).loadVitals();
@@ -46,6 +54,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> with SingleTickerProv
   @override
   void dispose() {
     _tabController.dispose();
+    _hrController.dispose();
     super.dispose();
   }
 
@@ -950,7 +959,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> with SingleTickerProv
       crossAxisCount: crossAxisCount,
       crossAxisSpacing: 14,
       mainAxisSpacing: 14,
-      childAspectRatio: 1.4,
+      childAspectRatio: 1.25,
       children: [
         _buildVitalGridCard(
           context: context,
@@ -982,6 +991,12 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> with SingleTickerProv
               aiText: aiText,
             );
           },
+          animationWidget: BPDoubleRingGauge(
+            systolic: current.bpSystolic ?? 120.0,
+            diastolic: current.bpDiastolic ?? 80.0,
+            sysColor: context.colors.primary,
+            diaColor: context.colors.accent,
+          ),
         ),
         _buildVitalGridCard(
           context: context,
@@ -1010,6 +1025,10 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> with SingleTickerProv
               aiText: aiText,
             );
           },
+          animationWidget: BloodSugarBeakerAnimation(
+            sugar: current.bloodSugar ?? 94.0,
+            color: context.colors.warning,
+          ),
         ),
         _buildVitalGridCard(
           context: context,
@@ -1037,6 +1056,10 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> with SingleTickerProv
               aiText: aiText,
             );
           },
+          animationWidget: HeartRatePulseAnimation(
+            bpm: current.heartRate ?? 72.0,
+            color: context.colors.errorSos,
+          ),
         ),
         _buildVitalGridCard(
           context: context,
@@ -1064,6 +1087,10 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> with SingleTickerProv
               aiText: aiText,
             );
           },
+          animationWidget: OxygenSatAnimation(
+            spo2: current.spo2 ?? 98.0,
+            color: Colors.teal,
+          ),
         ),
         _buildVitalGridCard(
           context: context,
@@ -1091,6 +1118,10 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> with SingleTickerProv
               aiText: aiText,
             );
           },
+          animationWidget: TemperatureMercuryAnimation(
+            temp: current.temperature ?? 36.6,
+            color: Colors.orange,
+          ),
         ),
         _buildVitalGridCard(
           context: context,
@@ -1122,6 +1153,10 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> with SingleTickerProv
               aiText: aiText,
             );
           },
+          animationWidget: WeightScaleDialAnimation(
+            weight: current.weight ?? 70.0,
+            color: Colors.blueGrey,
+          ),
         ),
       ],
     );
@@ -1137,6 +1172,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> with SingleTickerProv
     required String unit,
     required Map<String, dynamic> status,
     required VoidCallback onTap,
+    required Widget animationWidget,
   }) {
     final statusText = status['text'] as String;
     final statusColor = status['color'] as Color;
@@ -1188,23 +1224,47 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> with SingleTickerProv
                 ],
               ),
               const SizedBox(height: 8),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.baseline,
-                textBaseline: TextBaseline.alphabetic,
-                children: [
-                  Text(currentVal, style: context.vitalValue.copyWith(fontSize: 26, color: color)),
-                  const SizedBox(width: 4),
-                  Text(unit, style: context.vitalUnit),
-                ],
+              Expanded(
+                child: Row(
+                  children: [
+                    Expanded(
+                      flex: 3,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.baseline,
+                            textBaseline: TextBaseline.alphabetic,
+                            children: [
+                              Text(currentVal, style: context.vitalValue.copyWith(fontSize: 26, color: color)),
+                              const SizedBox(width: 4),
+                              Text(unit, style: context.vitalUnit),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            prevVal != null ? 'Prev: $prevVal $unit' : 'Prev: --',
+                            style: context.bodySmall.copyWith(fontSize: 11),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      flex: 2,
+                      child: Center(
+                        child: animationWidget,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              const Divider(height: 16),
+              const SizedBox(height: 8),
+              const Divider(height: 1),
+              const SizedBox(height: 6),
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  Text(
-                    prevVal != null ? 'Prev: $prevVal $unit' : 'Prev: --',
-                    style: context.bodySmall.copyWith(fontSize: 11),
-                  ),
                   Row(
                     children: [
                       Text(

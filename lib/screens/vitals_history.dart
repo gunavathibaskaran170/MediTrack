@@ -6,6 +6,7 @@ import '../theme/meditrack_theme.dart';
 import '../widgets/dialogs.dart';
 import '../providers/vitals_provider.dart';
 import '../core/models.dart';
+import 'package:lottie/lottie.dart';
 
 class VitalsHistory extends StatefulWidget {
   const VitalsHistory({super.key});
@@ -587,10 +588,18 @@ class _VitalsHistoryState extends State<VitalsHistory> with SingleTickerProvider
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.insert_chart_outlined,
-              size: 80,
-              color: context.colors.textHint,
+            SizedBox(
+              width: 120,
+              height: 120,
+              child: Lottie.network(
+                'https://lottie.host/a82d02c7-063a-4f51-b847-197e415fb5ba/xVd2qG8qA9.json',
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) => Icon(
+                  Icons.insert_chart_outlined,
+                  size: 80,
+                  color: context.colors.textHint,
+                ),
+              ),
             ),
             const SizedBox(height: MediTrackSpacing.large),
             Text(
