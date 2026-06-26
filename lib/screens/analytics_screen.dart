@@ -6,6 +6,7 @@ import '../providers/analytics_provider.dart';
 import '../providers/vitals_provider.dart';
 import '../providers/user_provider.dart';
 import '../core/models.dart';
+import '../widgets/floating_nodes_background.dart';
 
 class AnalyticsScreen extends StatefulWidget {
   const AnalyticsScreen({super.key});
@@ -67,36 +68,38 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> with SingleTickerProv
     final hasCheckup = current != null;
     final data = analyticsProvider.analyticsData;
 
-    return Scaffold(
-      backgroundColor: context.colors.background,
-      appBar: AppBar(
-        backgroundColor: context.colors.background,
-        title: Text('Health Analytics', style: context.titleLarge),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.picture_as_pdf_outlined),
-            tooltip: 'Print Health Summary',
-            onPressed: () => Navigator.pushNamed(context, '/reports'),
-          ),
-          const SizedBox(width: MediTrackSpacing.screenHorizontalPadding),
-        ],
-        bottom: TabBar(
-          controller: _tabController,
-          labelColor: context.colors.primary,
-          unselectedLabelColor: context.colors.textSecondary,
-          indicatorColor: context.colors.primary,
-          tabs: const [
-            Tab(text: '7 Days'),
-            Tab(text: '30 Days'),
-            Tab(text: '3 Months'),
+    return FloatingNodesBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          title: Text('Health Analytics', style: context.titleLarge),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.picture_as_pdf_outlined),
+              tooltip: 'Print Health Summary',
+              onPressed: () => Navigator.pushNamed(context, '/reports'),
+            ),
+            const SizedBox(width: MediTrackSpacing.screenHorizontalPadding),
           ],
+          bottom: TabBar(
+            controller: _tabController,
+            labelColor: context.colors.primary,
+            unselectedLabelColor: context.colors.textSecondary,
+            indicatorColor: context.colors.primary,
+            tabs: const [
+              Tab(text: '7 Days'),
+              Tab(text: '30 Days'),
+              Tab(text: '3 Months'),
+            ],
+          ),
         ),
-      ),
-      body: analyticsProvider.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(MediTrackSpacing.screenHorizontalPadding),
-              child: Column(
+        body: analyticsProvider.isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : SingleChildScrollView(
+                padding: const EdgeInsets.all(MediTrackSpacing.screenHorizontalPadding),
+                child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // 1. Hospital Vitals Checkup Comparison
@@ -160,6 +163,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> with SingleTickerProv
                 ],
               ),
             ),
+      ),
     );
   }
 

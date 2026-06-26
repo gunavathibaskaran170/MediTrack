@@ -24,6 +24,7 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   bool _medicineReminders = true;
   bool _followUpReminders = true;
+  int _sosCount = 0;
 
   @override
   void initState() {
@@ -39,7 +40,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
     });
     if (mounted) {
       Provider.of<UserProvider>(context, listen: false).loadUser();
+      _loadSosCount();
     }
+  }
+
+  void _loadSosCount() async {
+    try {
+      final logs = await DatabaseHelper.instance.getSosLogs();
+      setState(() {
+        _sosCount = logs.length;
+      });
+    } catch (_) {}
   }
 
   void _toggleMedicineReminders(bool val) async {
@@ -56,6 +67,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
     setState(() {
       _followUpReminders = val;
     });
+  }
+
+  Future<void> _handleLogout() async {
+    final confirm = await showConfirmDeleteDialog(
+      context,
+      title: 'Logout',
+      content: 'Are you sure you want to logout from your profile? You will need to sign in again.',
+    );
+    if (confirm == true) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('logged_in', false);
+      if (mounted) {
+        Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+      }
+    }
   }
 
   Future<void> _clearAllData() async {
@@ -89,7 +115,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         const SnackBar(content: Text('All data cleared successfully.')),
       );
 
-      Navigator.pushNamedAndRemoveUntil(context, '/onboarding', (route) => false);
+      Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
     }
   }
 
@@ -105,116 +131,323 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final userProvider = Provider.of<UserProvider>(context);
+    final medProvider = Provider.of<MedicineProvider>(context);
     final user = userProvider.currentUser;
 
-    final name = user?.name ?? 'John Doe';
-    final age = user?.age != null ? '${user!.age} years old' : '--';
-    final bloodGroup = user?.bloodGroup ?? '--';
+    final name = user?.name ?? 'Rajan Kumar';
+    final profession = user?.profession ?? 'Senior Software Engineer';
+    final organization = user?.organization ?? 'Apollo Hospitals Group';
+    final workEmail = user?.workEmail ?? 'rajan.kumar@apollo.com';
+    final workPhone = user?.workPhone ?? '+91-98765-99999';
+    final bio = user?.bio ?? 'Passionate about healthcare tech and patient monitoring systems.';
+    
+    final age = user?.age != null ? '${user!.age} years old' : '58 years old';
+    final bloodGroup = user?.bloodGroup ?? 'O+';
+    final gender = user?.gender ?? 'Male';
     final initials = _getInitials(name);
+
+    final activeMedicinesCount = medProvider.medicines.where((m) => m.isActive).length;
 
     return Scaffold(
       backgroundColor: context.colors.background,
       appBar: AppBar(
-        title: Text('Profile', style: context.titleLarge),
+        title: Text('Professional Profile', style: context.titleLarge),
         actions: [
           IconButton(
             icon: Icon(Icons.edit_outlined, color: context.colors.textPrimary),
-            onPressed: () => Navigator.pushNamed(context, '/profile/edit'),
+            tooltip: 'Edit Profile',
+            onPressed: () => Navigator.pushNamed(context, '/profile/edit').then((_) => _loadSettings()),
           ),
-          const SizedBox(width: MediTrackSpacing.screenHorizontalPadding),
+          IconButton(
+            icon: Icon(Icons.logout, color: context.colors.errorSos),
+            tooltip: 'Logout',
+            onPressed: _handleLogout,
+          ),
+          const SizedBox(width: 8),
         ],
       ),
       body: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const SizedBox(height: 24),
-            _buildProfileHeader(context, name, age, bloodGroup, initials),
-            const SizedBox(height: 24),
-            const Divider(),
+            // Professional Avatar and Bio Card
+            Card(
+              elevation: 4,
+              shadowColor: context.colors.shadowColor,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(MediTrackRadius.bottomSheets),
+                side: BorderSide(color: context.colors.dividerColor.withOpacity(0.5)),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 36,
+                          backgroundColor: context.colors.primary.withOpacity(0.1),
+                          child: Text(
+                            initials,
+                            style: context.displayLarge.copyWith(
+                              fontSize: 24,
+                              color: context.colors.primary,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                name,
+                                style: context.titleLarge.copyWith(fontWeight: FontWeight.bold),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                '$profession at',
+                                style: context.bodySmall.copyWith(color: context.colors.textSecondary),
+                              ),
+                              Text(
+                                organization,
+                                style: context.bodyMedium.copyWith(
+                                  color: context.colors.primary,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (bio.isNotEmpty) ...[
+                      const SizedBox(height: 16),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: context.colors.primaryLight.withOpacity(0.4),
+                          borderRadius: BorderRadius.circular(MediTrackRadius.inputFields),
+                          border: Border.all(color: context.colors.primaryLight),
+                        ),
+                        child: Text(
+                          bio,
+                          style: context.bodySmall.copyWith(
+                            fontStyle: FontStyle.italic,
+                            color: context.colors.textPrimary,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
 
-            _buildSectionHeader(context, 'Health Profile'),
-            ListTile(
-              leading: Icon(Icons.medical_information, color: context.colors.primary),
-              title: Text('My Conditions', style: context.bodyMedium),
-              subtitle: Text(user?.conditions ?? 'None entered', style: context.bodySmall),
-              trailing: Icon(Icons.arrow_forward_ios, size: 16, color: context.colors.textSecondary),
-              onTap: () => Navigator.pushNamed(context, '/profile/edit'),
+            // Statistics Grid (Apollo-style cards)
+            Row(
+              children: [
+                Expanded(
+                  child: _buildStatCard(
+                    context: context,
+                    icon: Icons.medication,
+                    value: '$activeMedicinesCount',
+                    label: 'Active Meds',
+                    color: context.colors.primary,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildStatCard(
+                    context: context,
+                    icon: Icons.trending_up,
+                    value: '${(medProvider.weeklyAdherence * 100).toInt()}%',
+                    label: 'Adherence',
+                    color: context.colors.accent,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildStatCard(
+                    context: context,
+                    icon: Icons.sos,
+                    value: '$_sosCount',
+                    label: 'SOS Alerts',
+                    color: context.colors.errorSos,
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const SosHistoryScreen())),
+                  ),
+                ),
+              ],
             ),
-            ListTile(
-              leading: Icon(Icons.warning_amber_outlined, color: context.colors.primary),
-              title: Text('Allergies', style: context.bodyMedium),
-              subtitle: Text(user?.allergies ?? 'None entered', style: context.bodySmall),
-              trailing: Icon(Icons.arrow_forward_ios, size: 16, color: context.colors.textSecondary),
-              onTap: () => Navigator.pushNamed(context, '/profile/edit'),
-            ),
-            ListTile(
-              leading: Icon(Icons.contact_emergency, color: context.colors.primary),
-              title: Text('Emergency Contact', style: context.bodyMedium),
-              subtitle: Text(user?.ecName != null ? '${user!.ecName} (${user.ecPhone ?? ""})' : 'None entered', style: context.bodySmall),
-              trailing: Icon(Icons.arrow_forward_ios, size: 16, color: context.colors.textSecondary),
-              onTap: () => Navigator.pushNamed(context, '/profile/edit'),
-            ),
-            ListTile(
-              leading: Icon(Icons.local_hospital, color: context.colors.primary),
-              title: Text('Hospital Phone', style: context.bodyMedium),
-              subtitle: Text(user?.hospitalPhone ?? 'None entered', style: context.bodySmall),
-              trailing: Icon(Icons.arrow_forward_ios, size: 16, color: context.colors.textSecondary),
-              onTap: () => Navigator.pushNamed(context, '/profile/edit'),
-            ),
-            ListTile(
-              leading: Icon(Icons.history, color: context.colors.primary),
-              title: Text('SOS Alert History', style: context.bodyMedium),
-              subtitle: Text('View history of emergency alerts triggered', style: context.bodySmall),
-              trailing: Icon(Icons.arrow_forward_ios, size: 16, color: context.colors.textSecondary),
-              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const SosHistoryScreen())),
-            ),
-            const Divider(),
+            const SizedBox(height: 20),
 
-            _buildSectionHeader(context, 'Notifications'),
-            SwitchListTile(
-              value: _medicineReminders,
-              onChanged: _toggleMedicineReminders,
-              secondary: Icon(Icons.medication, color: context.colors.primary),
-              title: Text('Medicine Reminders', style: context.bodyMedium),
+            // Tabs / Card Content
+            Text(
+              'Professional Contact & ID',
+              style: context.labelSmall.copyWith(
+                fontWeight: FontWeight.bold,
+                color: context.colors.textSecondary,
+                letterSpacing: 0.5,
+              ),
             ),
-            SwitchListTile(
-              value: _followUpReminders,
-              onChanged: _toggleFollowUpReminders,
-              secondary: Icon(Icons.upcoming, color: context.colors.primary),
-              title: Text('Follow-up Reminders', style: context.bodyMedium),
+            const SizedBox(height: 8),
+            Card(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(MediTrackRadius.cards),
+                side: BorderSide(color: context.colors.dividerColor.withOpacity(0.5)),
+              ),
+              child: Column(
+                children: [
+                  _buildDetailTile(Icons.work_outline, 'Designation', profession),
+                  _buildDetailTile(Icons.corporate_fare, 'Organization', organization),
+                  _buildDetailTile(Icons.email_outlined, 'Work Email', workEmail),
+                  _buildDetailTile(Icons.phone_android, 'Work Phone', workPhone),
+                ],
+              ),
             ),
-            const Divider(),
+            const SizedBox(height: 20),
 
-            _buildSectionHeader(context, 'Data Management'),
-            ListTile(
-              leading: Icon(Icons.delete_forever, color: context.colors.errorSos),
-              title: Text('Clear All Data', style: context.bodyMedium.copyWith(color: context.colors.errorSos, fontWeight: FontWeight.bold)),
-              trailing: Icon(Icons.arrow_forward_ios, size: 16, color: context.colors.errorSos),
-              onTap: () async {
-                final confirm = await showConfirmDeleteDialog(
-                  context,
-                  title: 'Clear All Data',
-                  content: 'Are you sure you want to delete all offline data from this device? This action is permanent and cannot be undone.',
-                );
-                if (confirm == true) {
-                  await _clearAllData();
-                }
-              },
+            Text(
+              'Health Card details',
+              style: context.labelSmall.copyWith(
+                fontWeight: FontWeight.bold,
+                color: context.colors.textSecondary,
+                letterSpacing: 0.5,
+              ),
             ),
-            const Divider(),
+            const SizedBox(height: 8),
+            Card(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(MediTrackRadius.cards),
+                side: BorderSide(color: context.colors.dividerColor.withOpacity(0.5)),
+              ),
+              child: Column(
+                children: [
+                  _buildDetailTile(Icons.cake_outlined, 'Age & Gender', '$age  |  $gender'),
+                  _buildDetailTile(Icons.water_drop_outlined, 'Blood Group', '$bloodGroup Blood Group'),
+                  _buildDetailTile(
+                    Icons.medical_information,
+                    'Conditions',
+                    user?.conditions ?? 'Diabetes, Hypertension',
+                    onTap: () => Navigator.pushNamed(context, '/profile/edit'),
+                  ),
+                  _buildDetailTile(
+                    Icons.warning_amber_outlined,
+                    'Allergies',
+                    user?.allergies ?? 'Penicillin',
+                    onTap: () => Navigator.pushNamed(context, '/profile/edit'),
+                  ),
+                  _buildDetailTile(
+                    Icons.contact_emergency,
+                    'Emergency Contact',
+                    user?.ecName != null ? '${user!.ecName} (${user.ecPhone ?? ""})' : 'Priya Kumar (+91-98765-43210)',
+                    onTap: () => Navigator.pushNamed(context, '/profile/edit'),
+                  ),
+                  _buildDetailTile(
+                    Icons.local_hospital,
+                    'Primary Care Hospital',
+                    user?.hospitalPhone ?? '+91-11-2345-6789',
+                    onTap: () => Navigator.pushNamed(context, '/profile/edit'),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
 
-            _buildSectionHeader(context, 'About'),
-            ListTile(
-              leading: Icon(Icons.gavel, color: context.colors.primary),
-              title: Text('Licenses', style: context.bodyMedium),
-              onTap: () {
-                showLicensePage(context: context);
-              },
+            Text(
+              'App & Reminders Settings',
+              style: context.labelSmall.copyWith(
+                fontWeight: FontWeight.bold,
+                color: context.colors.textSecondary,
+                letterSpacing: 0.5,
+              ),
             ),
-            ListTile(
-              leading: Icon(Icons.verified, color: context.colors.primary),
-              title: Text('Version 1.0.0', style: context.bodyMedium),
-              trailing: Text('1.0.0', style: context.bodySmall),
+            const SizedBox(height: 8),
+            Card(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(MediTrackRadius.cards),
+                side: BorderSide(color: context.colors.dividerColor.withOpacity(0.5)),
+              ),
+              child: Column(
+                children: [
+                  SwitchListTile(
+                    value: _medicineReminders,
+                    onChanged: _toggleMedicineReminders,
+                    secondary: Icon(Icons.medication, color: context.colors.primary),
+                    title: Text('Medicine Reminders', style: context.bodyMedium),
+                  ),
+                  SwitchListTile(
+                    value: _followUpReminders,
+                    onChanged: _toggleFollowUpReminders,
+                    secondary: Icon(Icons.upcoming, color: context.colors.primary),
+                    title: Text('Follow-up Reminders', style: context.bodyMedium),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            Text(
+              'Security & System',
+              style: context.labelSmall.copyWith(
+                fontWeight: FontWeight.bold,
+                color: context.colors.textSecondary,
+                letterSpacing: 0.5,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Card(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(MediTrackRadius.cards),
+                side: BorderSide(color: context.colors.dividerColor.withOpacity(0.5)),
+              ),
+              child: Column(
+                children: [
+                  ListTile(
+                    leading: Icon(Icons.delete_forever, color: context.colors.errorSos),
+                    title: Text(
+                      'Clear Offline Data',
+                      style: context.bodyMedium.copyWith(color: context.colors.errorSos, fontWeight: FontWeight.bold),
+                    ),
+                    trailing: const Icon(Icons.arrow_forward_ios, size: 14),
+                    onTap: () async {
+                      final confirm = await showConfirmDeleteDialog(
+                        context,
+                        title: 'Clear All Data',
+                        content: 'Are you sure you want to delete all offline data from this device? This action is permanent and cannot be undone.',
+                      );
+                      if (confirm == true) {
+                        await _clearAllData();
+                      }
+                    },
+                  ),
+                  ListTile(
+                    leading: Icon(Icons.gavel, color: context.colors.primary),
+                    title: Text('Licenses & Disclaimers', style: context.bodyMedium),
+                    onTap: () => showLicensePage(context: context),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 32),
+
+            // Red Logout Button
+            ElevatedButton.icon(
+              onPressed: _handleLogout,
+              icon: const Icon(Icons.logout),
+              label: const Text('Sign Out from Profile', style: TextStyle(fontWeight: FontWeight.bold)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: context.colors.errorSos,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(MediTrackRadius.buttons),
+                ),
+              ),
             ),
             const SizedBox(height: 40),
           ],
@@ -223,57 +456,77 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildProfileHeader(BuildContext context, String name, String age, String bloodGroup, String initials) {
-    return Center(
-      child: Column(
-        children: [
-          CircleAvatar(
-            radius: 40,
-            backgroundColor: context.colors.primaryLight,
-            child: Text(
-              initials,
-              style: context.displayLarge.copyWith(
-                fontSize: 24,
-                color: context.colors.primary,
-                fontWeight: FontWeight.bold,
+  Widget _buildStatCard({
+    required BuildContext context,
+    required IconData icon,
+    required String value,
+    required String label,
+    required Color color,
+    VoidCallback? onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(MediTrackRadius.cards),
+      child: Card(
+        color: context.colors.card,
+        elevation: 2,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(MediTrackRadius.cards),
+          side: BorderSide(color: color.withOpacity(0.15), width: 1.5),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 12.0),
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.08),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: color, size: 22),
               ),
-            ),
+              const SizedBox(height: 8),
+              Text(
+                value,
+                style: context.headlineMedium.copyWith(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 22,
+                  color: color,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                label,
+                style: context.labelSmall.copyWith(
+                  color: context.colors.textSecondary,
+                  fontSize: 11,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 12),
-          Text(
-            name,
-            style: context.headlineMedium,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            '$age  |  $bloodGroup Blood Group',
-            style: context.bodySmall,
-          ),
-          const SizedBox(height: 12),
-          OutlinedButton.icon(
-            onPressed: () => Navigator.pushNamed(context, '/profile/edit'),
-            icon: const Icon(Icons.edit, size: 16),
-            label: const Text('Edit Profile'),
-          ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildSectionHeader(BuildContext context, String title) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 16.0, top: 12.0, bottom: 4.0),
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: Text(
-          title,
-          style: context.labelSmall.copyWith(
-            fontWeight: FontWeight.bold,
-            color: context.colors.textSecondary,
-            letterSpacing: 0.5,
-          ),
+  Widget _buildDetailTile(IconData icon, String title, String subtitle, {VoidCallback? onTap}) {
+    return ListTile(
+      leading: Container(
+        padding: const EdgeInsets.all(6),
+        decoration: BoxDecoration(
+          color: context.colors.primaryLight.withOpacity(0.3),
+          borderRadius: BorderRadius.circular(8),
         ),
+        child: Icon(icon, color: context.colors.primary, size: 18),
       ),
+      title: Text(title, style: context.labelSmall.copyWith(color: context.colors.textSecondary)),
+      subtitle: Text(
+        subtitle,
+        style: context.bodyMedium.copyWith(fontWeight: FontWeight.w500, color: context.colors.textPrimary),
+      ),
+      trailing: onTap != null ? Icon(Icons.arrow_forward_ios, size: 12, color: context.colors.textSecondary) : null,
+      onTap: onTap,
     );
   }
 }

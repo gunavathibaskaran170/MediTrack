@@ -20,6 +20,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   final _ecNameController = TextEditingController();
   final _ecPhoneController = TextEditingController();
   final _hospitalPhoneController = TextEditingController();
+  final _professionController = TextEditingController();
+  final _organizationController = TextEditingController();
+  final _workEmailController = TextEditingController();
+  final _workPhoneController = TextEditingController();
+  final _bioController = TextEditingController();
 
   String? _gender = 'Male';
   String? _bloodGroup = 'O+';
@@ -38,6 +43,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       _ecNameController.text = user.ecName ?? '';
       _ecPhoneController.text = user.ecPhone ?? '';
       _hospitalPhoneController.text = user.hospitalPhone ?? '';
+      _professionController.text = user.profession ?? '';
+      _organizationController.text = user.organization ?? '';
+      _workEmailController.text = user.workEmail ?? '';
+      _workPhoneController.text = user.workPhone ?? '';
+      _bioController.text = user.bio ?? '';
     }
   }
 
@@ -50,6 +60,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _ecNameController.dispose();
     _ecPhoneController.dispose();
     _hospitalPhoneController.dispose();
+    _professionController.dispose();
+    _organizationController.dispose();
+    _workEmailController.dispose();
+    _workPhoneController.dispose();
+    _bioController.dispose();
     super.dispose();
   }
 
@@ -71,6 +86,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       ecPhone: _ecPhoneController.text.trim().isNotEmpty ? _ecPhoneController.text.trim() : null,
       hospitalPhone: _hospitalPhoneController.text.trim().isNotEmpty ? _hospitalPhoneController.text.trim() : null,
       createdAt: user?.createdAt,
+      profession: _professionController.text.trim().isNotEmpty ? _professionController.text.trim() : null,
+      organization: _organizationController.text.trim().isNotEmpty ? _organizationController.text.trim() : null,
+      workEmail: _workEmailController.text.trim().isNotEmpty ? _workEmailController.text.trim() : null,
+      workPhone: _workPhoneController.text.trim().isNotEmpty ? _workPhoneController.text.trim() : null,
+      bio: _bioController.text.trim().isNotEmpty ? _bioController.text.trim() : null,
     );
 
     await userProvider.updateUser(updated);
@@ -246,6 +266,64 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 decoration: const InputDecoration(
                   labelText: 'Hospital Phone (optional)',
                   prefixIcon: Icon(Icons.local_hospital_outlined),
+                ),
+              ),
+              const SizedBox(height: 24),
+              // Section Header: Professional Details
+              Text(
+                'Professional Details',
+                style: context.labelSmall.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: context.colors.primary,
+                  letterSpacing: 0.5,
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _professionController,
+                style: context.bodyMedium,
+                decoration: const InputDecoration(
+                  labelText: 'Profession / Designation',
+                  prefixIcon: Icon(Icons.work_outline),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _organizationController,
+                style: context.bodyMedium,
+                decoration: const InputDecoration(
+                  labelText: 'Company / Organization',
+                  prefixIcon: Icon(Icons.business),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _workEmailController,
+                keyboardType: TextInputType.emailAddress,
+                style: context.bodyMedium,
+                decoration: const InputDecoration(
+                  labelText: 'Work Email Address',
+                  prefixIcon: Icon(Icons.mail_outline),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _workPhoneController,
+                keyboardType: TextInputType.phone,
+                style: context.bodyMedium,
+                decoration: const InputDecoration(
+                  labelText: 'Work Phone Number',
+                  prefixIcon: Icon(Icons.phone_android),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _bioController,
+                maxLines: 3,
+                style: context.bodyMedium,
+                decoration: const InputDecoration(
+                  labelText: 'Professional Bio / Summary',
+                  prefixIcon: Icon(Icons.description_outlined),
                 ),
               ),
               const SizedBox(height: 40),

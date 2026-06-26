@@ -6,6 +6,7 @@ import '../theme/meditrack_theme.dart';
 import '../widgets/dialogs.dart';
 import '../providers/medicine_provider.dart';
 import '../core/models.dart';
+import 'package:lottie/lottie.dart';
 
 class MedicinesScreen extends StatefulWidget {
   const MedicinesScreen({super.key});
@@ -16,6 +17,8 @@ class MedicinesScreen extends StatefulWidget {
 
 class _MedicinesScreenState extends State<MedicinesScreen> {
   String _selectedFilter = 'All';
+  String _searchQuery = '';
+  final _searchController = TextEditingController();
 
   @override
   void initState() {
@@ -23,6 +26,12 @@ class _MedicinesScreenState extends State<MedicinesScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<MedicineProvider>(context, listen: false).loadMedicines();
     });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   void _showAddMedicineBottomSheet() {
@@ -39,12 +48,125 @@ class _MedicinesScreenState extends State<MedicinesScreen> {
     );
   }
 
-  List<Medicine> _getFilteredMedicines(List<Medicine> list) {
-    if (_selectedFilter == 'All') return list;
-    if (_selectedFilter == 'Active') return list.where((m) => m.isActive).toList();
-    if (_selectedFilter == 'Inactive') return list.where((m) => !m.isActive).toList();
+  void _showMedicineCareDialog(Medicine med) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(MediTrackRadius.bottomSheets),
+          ),
+          title: Row(
+            children: [
+              Icon(Icons.health_and_safety, color: context.colors.primary),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  med.name,
+                  style: context.titleLarge.copyWith(fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildCareSection(
+                  icon: Icons.info_outline,
+                  title: 'How to Take (Instructions)',
+                  content: med.instructions ?? 'Take as directed by your physician.',
+                  color: context.colors.primary,
+                ),
+                const SizedBox(height: 16),
+                _buildCareSection(
+                  icon: Icons.warning_amber_outlined,
+                  title: 'Precautions',
+                  content: med.precautions ?? 'Consult doctor before taking with other medications.',
+                  color: context.colors.warning,
+                ),
+                const SizedBox(height: 16),
+                _buildCareSection(
+                  icon: Icons.sick_outlined,
+                  title: 'Common Side Effects',
+                  content: med.sideEffects ?? 'Nausea, dizziness or light headache in some cases.',
+                  color: context.colors.errorSos,
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                'Close',
+                style: TextStyle(color: context.colors.primary, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
-    return list.where((m) {
+  Widget _buildCareSection({
+    required IconData icon,
+    required String title,
+    required String content,
+    required Color color,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(icon, color: color, size: 20),
+            const SizedBox(width: 8),
+            Text(
+              title,
+              style: context.titleMedium.copyWith(
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+                color: color,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.05),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: color.withOpacity(0.15)),
+          ),
+          child: Text(
+            content,
+            style: context.bodyMedium.copyWith(fontSize: 13, height: 1.4),
+          ),
+        ),
+      ],
+    );
+  }
+
+  List<Medicine> _getFilteredMedicines(List<Medicine> list) {
+    List<Medicine> filteredList = list;
+
+    // Search query filter
+    if (_searchQuery.isNotEmpty) {
+      filteredList = filteredList
+          .where((m) => m.name.toLowerCase().contains(_searchQuery.toLowerCase()))
+          .toList();
+    }
+
+    // Tab filter
+    if (_selectedFilter == 'All') return filteredList;
+    if (_selectedFilter == 'Active') return filteredList.where((m) => m.isActive).toList();
+    if (_selectedFilter == 'Inactive') return filteredList.where((m) => !m.isActive).toList();
+
+    return filteredList.where((m) {
       for (var timeStr in m.reminderTimes) {
         try {
           final parts = timeStr.split(':');
@@ -139,6 +261,56 @@ class _MedicinesScreenState extends State<MedicinesScreen> {
     return false;
   }
 
+  void _mockCallDoctor() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Call Doctor / Pharmacy'),
+        content: const Text('Would you like to call Apollo Pharmacy Support at +1-800-APOLLO?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Calling +1-800-APOLLO... (Mock Dial)')),
+              );
+            },
+            child: const Text('Call'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _mockWhatsAppOrder() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Order via WhatsApp'),
+        content: const Text('Initiate medicine ordering via WhatsApp with your active prescription?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Redirecting to WhatsApp Order Chat... (Mock)')),
+              );
+            },
+            child: const Text('Order Now'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final medProvider = Provider.of<MedicineProvider>(context);
@@ -158,16 +330,29 @@ class _MedicinesScreenState extends State<MedicinesScreen> {
       ),
       body: medProvider.isLoading
           ? const Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                _buildAdherenceSummaryCard(context, medProvider),
-                const SizedBox(height: MediTrackSpacing.small),
-                _buildFilterChipsRow(),
-                const SizedBox(height: MediTrackSpacing.small),
-                Expanded(
-                  child: filtered.isEmpty
-                      ? _buildEmptyState()
+          : SingleChildScrollView(
+              child: Column(
+                children: [
+                  // Superfast Delivery Banner
+                  _buildApolloBanner(),
+
+                  // Search Bar Card
+                  _buildSearchBarCard(),
+
+                  // Quick Shortcuts Row
+                  _buildQuickShortcuts(),
+                  const SizedBox(height: 12),
+
+                  // Filter Chips
+                  _buildFilterChipsRow(),
+                  const SizedBox(height: 12),
+
+                  // Medicines List
+                  filtered.isEmpty
+                      ? SizedBox(height: 300, child: _buildEmptyState())
                       : ListView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
                           padding: const EdgeInsets.symmetric(horizontal: MediTrackSpacing.screenHorizontalPadding),
                           itemCount: filtered.length,
                           itemBuilder: (context, index) {
@@ -175,8 +360,9 @@ class _MedicinesScreenState extends State<MedicinesScreen> {
                             return _buildMedicineCard(med, index, medProvider);
                           },
                         ),
-                ),
-              ],
+                  const SizedBox(height: 80),
+                ],
+              ),
             ),
       floatingActionButton: FloatingActionButton(
         onPressed: _showAddMedicineBottomSheet,
@@ -188,12 +374,212 @@ class _MedicinesScreenState extends State<MedicinesScreen> {
     );
   }
 
+  Widget _buildApolloBanner() {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.all(MediTrackSpacing.screenHorizontalPadding),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            context.colors.primary,
+            context.colors.primary.withOpacity(0.85),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(MediTrackRadius.bottomSheets),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Get Medicines Fast',
+                style: context.titleLarge.copyWith(color: Colors.white, fontWeight: FontWeight.bold),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: Colors.amber,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: const Text(
+                  'APOLLO STYLE',
+                  style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.black),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Superfast Delivery directly in your city',
+            style: TextStyle(color: Colors.white70, fontSize: 13),
+          ),
+          const SizedBox(height: 14),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildBannerBadge(Icons.monetization_on_outlined, 'Cash on Delivery'),
+              _buildBannerBadge(Icons.local_shipping_outlined, 'Express Delivery'),
+              _buildBannerBadge(Icons.assignment_return_outlined, 'Easy Returns'),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBannerBadge(IconData icon, String text) {
+    return Row(
+      children: [
+        Icon(icon, color: Colors.white, size: 14),
+        const SizedBox(width: 4),
+        Text(
+          text,
+          style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w500),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSearchBarCard() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: MediTrackSpacing.screenHorizontalPadding),
+      child: Card(
+        elevation: 3,
+        shadowColor: context.colors.shadowColor,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(MediTrackRadius.inputFields),
+          side: BorderSide(color: context.colors.dividerColor.withOpacity(0.5)),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 2.0),
+          child: TextField(
+            controller: _searchController,
+            style: context.bodyMedium,
+            decoration: InputDecoration(
+              hintText: 'Search for Medicines...',
+              hintStyle: TextStyle(color: context.colors.textHint),
+              prefixIcon: Icon(Icons.search, color: context.colors.primary),
+              border: InputBorder.none,
+              focusedBorder: InputBorder.none,
+              enabledBorder: InputBorder.none,
+              suffixIcon: _searchQuery.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear, size: 18),
+                      onPressed: () {
+                        setState(() {
+                          _searchController.clear();
+                          _searchQuery = '';
+                        });
+                      },
+                    )
+                  : null,
+            ),
+            onChanged: (val) {
+              setState(() {
+                _searchQuery = val;
+              });
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuickShortcuts() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      child: Row(
+        children: [
+          Expanded(
+            child: _buildShortcutItem(
+              icon: Icons.chat_outlined,
+              label: 'WhatsApp',
+              color: const Color(0xFF25D366),
+              onTap: _mockWhatsAppOrder,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: _buildShortcutItem(
+              icon: Icons.qr_code_scanner,
+              label: 'Scan Rx',
+              color: context.colors.primary,
+              onTap: () => Navigator.pushNamed(context, '/prescriptions'),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: _buildShortcutItem(
+              icon: Icons.call_outlined,
+              label: 'Call Doctor',
+              color: Colors.orange,
+              onTap: _mockCallDoctor,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildShortcutItem({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(MediTrackRadius.cards),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.06),
+          borderRadius: BorderRadius.circular(MediTrackRadius.cards),
+          border: Border.all(color: color.withOpacity(0.15)),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: color, size: 20),
+            const SizedBox(height: 6),
+            Text(
+              label,
+              style: context.bodySmall.copyWith(
+                fontWeight: FontWeight.bold,
+                color: color,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildEmptyState() {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.medication_outlined, size: 80, color: context.colors.textHint),
+          SizedBox(
+            width: 120,
+            height: 120,
+            child: Lottie.network(
+              'https://lottie.host/3e8e2034-722e-468f-9e6e-213c41551608/D7f5Z2dJgC.json',
+              fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) {
+                return Icon(
+                  Icons.medication_outlined,
+                  size: 80,
+                  color: context.colors.textHint,
+                );
+              },
+            ),
+          ),
           const SizedBox(height: MediTrackSpacing.large),
           Text(
             'No medicines found',
@@ -205,79 +591,6 @@ class _MedicinesScreenState extends State<MedicinesScreen> {
             child: const Text('Add Your First Medicine'),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildAdherenceSummaryCard(BuildContext context, MedicineProvider provider) {
-    final adherenceStr = '${(provider.weeklyAdherence * 100).toInt()}%';
-    return Card(
-      color: context.colors.primary,
-      margin: const EdgeInsets.all(MediTrackSpacing.screenHorizontalPadding),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: MediTrackSpacing.cardInternalPaddingHorizontal,
-          vertical: MediTrackSpacing.cardInternalPaddingVertical,
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'This Week',
-                    style: context.titleLarge.copyWith(color: Colors.white),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Adherence',
-                    style: context.bodySmall.copyWith(color: Colors.white.withOpacity(0.7)),
-                  ),
-                ],
-              ),
-            ),
-            Stack(
-              alignment: Alignment.center,
-              children: [
-                SizedBox(
-                  width: 60,
-                  height: 60,
-                  child: CircularProgressIndicator(
-                    value: provider.weeklyAdherence,
-                    strokeWidth: 6,
-                    backgroundColor: Colors.white.withOpacity(0.3),
-                    valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
-                  ),
-                ),
-                Text(
-                  adherenceStr,
-                  style: context.bodySmall.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(width: 24),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Taken: ${provider.takenThisWeek}',
-                    style: context.bodyMedium.copyWith(color: Colors.white, fontWeight: FontWeight.w500),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Missed/Skipped: ${provider.missedThisWeek}',
-                    style: context.bodyMedium.copyWith(color: Colors.white, fontWeight: FontWeight.w500),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -352,36 +665,43 @@ class _MedicinesScreenState extends State<MedicinesScreen> {
         ],
       ),
       child: Card(
-        margin: const EdgeInsets.symmetric(vertical: 4.0),
+        margin: const EdgeInsets.symmetric(vertical: 6.0),
         clipBehavior: Clip.antiAlias,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(MediTrackRadius.cards),
+          side: BorderSide(color: context.colors.dividerColor.withOpacity(0.7)),
+        ),
         child: IntrinsicHeight(
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Container(
-                width: 4,
-                color: isOverdueVal ? context.colors.errorSos : context.colors.accent,
+                width: 5,
+                color: isOverdueVal
+                    ? context.colors.errorSos
+                    : (med.isActive ? context.colors.primary : context.colors.textHint),
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: MediTrackSpacing.cardInternalPaddingHorizontal,
-                    vertical: MediTrackSpacing.cardInternalPaddingVertical,
-                  ),
+                  padding: const EdgeInsets.all(12.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
                         children: [
                           Container(
-                            width: 44,
-                            height: 44,
+                            width: 40,
+                            height: 40,
                             decoration: BoxDecoration(
-                              color: iconBg,
+                              color: med.isActive ? iconBg : context.colors.dividerColor,
                               shape: BoxShape.circle,
                             ),
-                            child: Icon(Icons.medication, color: iconColor),
+                            child: Icon(
+                              Icons.medication,
+                              color: med.isActive ? iconColor : context.colors.textHint,
+                              size: 20,
+                            ),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
@@ -390,7 +710,10 @@ class _MedicinesScreenState extends State<MedicinesScreen> {
                               children: [
                                 Text(
                                   med.name,
-                                  style: context.titleMedium,
+                                  style: context.titleMedium.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: med.isActive ? context.colors.textPrimary : context.colors.textHint,
+                                  ),
                                 ),
                                 const SizedBox(height: 2),
                                 Row(
@@ -411,6 +734,7 @@ class _MedicinesScreenState extends State<MedicinesScreen> {
                           ),
                           Switch(
                             value: med.isActive,
+                            activeColor: context.colors.primary,
                             onChanged: (val) async {
                               if (med.id != null) {
                                 await provider.toggleActive(med.id!, val);
@@ -421,12 +745,35 @@ class _MedicinesScreenState extends State<MedicinesScreen> {
                       ),
                       const SizedBox(height: 8),
                       Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Icon(Icons.alarm, size: 14, color: context.colors.textSecondary),
-                          const SizedBox(width: 4),
-                          Text(
-                            'Next: ${_getNextDoseTime(med)}',
-                            style: context.bodySmall,
+                          Row(
+                            children: [
+                              Icon(Icons.alarm, size: 14, color: context.colors.textSecondary),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Next Dose: ${_getNextDoseTime(med)}',
+                                style: context.bodySmall,
+                              ),
+                            ],
+                          ),
+                          // Details & Care Button
+                          TextButton.icon(
+                            onPressed: () => _showMedicineCareDialog(med),
+                            icon: Icon(Icons.info_outline, size: 12, color: context.colors.primary),
+                            label: Text(
+                              'Details & Care',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: context.colors.primary,
+                              ),
+                            ),
+                            style: TextButton.styleFrom(
+                              padding: EdgeInsets.zero,
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
                           ),
                         ],
                       ),
@@ -510,9 +857,12 @@ class _AddMedicineBottomSheetState extends State<AddMedicineBottomSheet> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _dosageController = TextEditingController();
+  final _instructionsController = TextEditingController();
+  final _precautionsController = TextEditingController();
+  final _sideEffectsController = TextEditingController();
 
   String _selectedFrequency = 'Once daily';
-  String _unit = 'mg';
+  String _unit = 'tablet(s)';
   final List<String> _frequencies = [
     'Once daily',
     'Twice daily',
@@ -528,6 +878,9 @@ class _AddMedicineBottomSheetState extends State<AddMedicineBottomSheet> {
   void dispose() {
     _nameController.dispose();
     _dosageController.dispose();
+    _instructionsController.dispose();
+    _precautionsController.dispose();
+    _sideEffectsController.dispose();
     super.dispose();
   }
 
@@ -566,6 +919,9 @@ class _AddMedicineBottomSheetState extends State<AddMedicineBottomSheet> {
 
     final String name = _nameController.text.trim();
     final double dosage = double.parse(_dosageController.text.trim());
+    final String instructions = _instructionsController.text.trim();
+    final String precautions = _precautionsController.text.trim();
+    final String sideEffects = _sideEffectsController.text.trim();
 
     final reminderTimes = _doseTimes.map((t) {
       final hourStr = t.hour.toString().padLeft(2, '0');
@@ -582,6 +938,9 @@ class _AddMedicineBottomSheetState extends State<AddMedicineBottomSheet> {
       startDate: DateFormat('yyyy-MM-dd').format(_startDate),
       endDate: _endDate != null ? DateFormat('yyyy-MM-dd').format(_endDate!) : null,
       isActive: true,
+      instructions: instructions.isNotEmpty ? instructions : 'Take as directed by your physician.',
+      precautions: precautions.isNotEmpty ? precautions : 'Consult doctor before taking with other medications.',
+      sideEffects: sideEffects.isNotEmpty ? sideEffects : 'Nausea, dizziness or light headache in some cases.',
     );
 
     final provider = Provider.of<MedicineProvider>(context, listen: false);
@@ -598,29 +957,36 @@ class _AddMedicineBottomSheetState extends State<AddMedicineBottomSheet> {
   @override
   Widget build(BuildContext context) {
     return DraggableScrollableSheet(
-      expand: false,
-      initialChildSize: 0.95,
+      initialChildSize: 0.9,
+      minChildSize: 0.5,
       maxChildSize: 0.95,
-      minChildSize: 0.6,
+      expand: false,
       builder: (context, scrollController) {
-        return Scaffold(
-          backgroundColor: context.colors.card,
-          appBar: AppBar(
-            backgroundColor: context.colors.card,
-            title: Text('Add Medicine', style: context.titleLarge),
-            automaticallyImplyLeading: false,
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.close),
-                onPressed: () => Navigator.pop(context),
-              ),
-              const SizedBox(width: MediTrackSpacing.screenHorizontalPadding),
-            ],
+        return Container(
+          decoration: BoxDecoration(
+            color: context.colors.background,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(MediTrackRadius.bottomSheets)),
           ),
-          body: Form(
+          child: Form(
             key: _formKey,
             child: Column(
               children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                  decoration: BoxDecoration(
+                    border: Border(bottom: BorderSide(color: context.colors.dividerColor, width: 0.8)),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Add New Medicine', style: context.titleLarge.copyWith(fontWeight: FontWeight.bold)),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ],
+                  ),
+                ),
                 Expanded(
                   child: SingleChildScrollView(
                     controller: scrollController,
@@ -634,13 +1000,14 @@ class _AddMedicineBottomSheetState extends State<AddMedicineBottomSheet> {
                           decoration: const InputDecoration(
                             labelText: 'Medicine Name',
                             prefixIcon: Icon(Icons.medication_outlined),
+                            hintText: 'e.g. Paracetamol',
                           ),
                           validator: (val) {
-                            if (val == null || val.trim().isEmpty) return 'Medicine Name is required';
+                            if (val == null || val.trim().isEmpty) return 'Name is required';
                             return null;
                           },
                         ),
-                        const SizedBox(height: MediTrackSpacing.formFieldGap),
+                        const SizedBox(height: 16),
                         Row(
                           children: [
                             Expanded(
@@ -648,34 +1015,34 @@ class _AddMedicineBottomSheetState extends State<AddMedicineBottomSheet> {
                               child: TextFormField(
                                 controller: _dosageController,
                                 style: context.bodyMedium,
-                                keyboardType: TextInputType.number,
+                                keyboardType: const TextInputType.numberWithOptions(decimal: true),
                                 decoration: const InputDecoration(
                                   labelText: 'Dosage',
-                                  prefixIcon: Icon(Icons.numbers),
+                                  prefixIcon: Icon(Icons.pin),
                                 ),
                                 validator: (val) {
                                   if (val == null || val.trim().isEmpty) return 'Required';
-                                  final d = double.tryParse(val.trim());
-                                  if (d == null || d <= 0) return 'Must be positive number';
+                                  if (double.tryParse(val.trim()) == null) return 'Invalid';
                                   return null;
                                 },
                               ),
                             ),
                             const SizedBox(width: 16),
                             Expanded(
-                              flex: 1,
+                              flex: 3,
                               child: DropdownButtonFormField<String>(
                                 value: _unit,
                                 style: context.bodyMedium.copyWith(color: context.colors.textPrimary),
                                 decoration: const InputDecoration(
                                   labelText: 'Unit',
+                                  prefixIcon: Icon(Icons.category_outlined),
                                 ),
                                 items: const [
-                                  DropdownMenuItem(value: 'mg', child: Text('mg')),
+                                  DropdownMenuItem(value: 'tablet(s)', child: Text('tablet(s)')),
+                                  DropdownMenuItem(value: 'capsule(s)', child: Text('capsule(s)')),
                                   DropdownMenuItem(value: 'ml', child: Text('ml')),
-                                  DropdownMenuItem(value: 'tablet', child: Text('tablet')),
-                                  DropdownMenuItem(value: 'capsule', child: Text('capsule')),
-                                  DropdownMenuItem(value: 'drops', child: Text('drops')),
+                                  DropdownMenuItem(value: 'drop(s)', child: Text('drop(s)')),
+                                  DropdownMenuItem(value: 'mg', child: Text('mg')),
                                 ],
                                 onChanged: (val) {
                                   if (val != null) {
@@ -688,16 +1055,17 @@ class _AddMedicineBottomSheetState extends State<AddMedicineBottomSheet> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: MediTrackSpacing.formFieldGap),
+                        const SizedBox(height: 16),
                         DropdownButtonFormField<String>(
                           value: _selectedFrequency,
                           style: context.bodyMedium.copyWith(color: context.colors.textPrimary),
                           decoration: const InputDecoration(
                             labelText: 'Frequency',
+                            prefixIcon: Icon(Icons.repeat),
                           ),
-                          items: _frequencies.map((freq) {
-                            return DropdownMenuItem(value: freq, child: Text(freq));
-                          }).toList(),
+                          items: _frequencies
+                              .map((f) => DropdownMenuItem(value: f, child: Text(f)))
+                              .toList(),
                           onChanged: (val) {
                             if (val != null) {
                               setState(() {
@@ -707,40 +1075,67 @@ class _AddMedicineBottomSheetState extends State<AddMedicineBottomSheet> {
                             }
                           },
                         ),
-                        const SizedBox(height: MediTrackSpacing.large),
+                        const SizedBox(height: 24),
                         Text(
-                          'Dose Times',
-                          style: context.titleMedium,
+                          'Dose Timings',
+                          style: context.labelSmall.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: context.colors.textSecondary,
+                            letterSpacing: 0.5,
+                          ),
                         ),
-                        const SizedBox(height: MediTrackSpacing.titleToContentGap),
-                        ...List.generate(_getDoseTimeCount(), (index) {
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 4.0),
-                            child: Row(
-                              children: [
-                                Icon(Icons.alarm, size: 20, color: context.colors.primary),
-                                const SizedBox(width: 8),
-                                Text('Dose ${index + 1} Time:', style: context.bodyMedium),
-                                const Spacer(),
-                                TextButton(
-                                  onPressed: () async {
-                                    final time = await showTimePicker(
-                                      context: context,
-                                      initialTime: _doseTimes[index],
-                                    );
-                                    if (time != null) {
-                                      setState(() {
-                                        _doseTimes[index] = time;
-                                      });
-                                    }
-                                  },
-                                  child: Text(_doseTimes[index].format(context), style: TextStyle(color: context.colors.primary, fontWeight: FontWeight.bold)),
-                                ),
-                              ],
-                            ),
-                          );
-                        }),
-                        const Divider(height: 32),
+                        const SizedBox(height: 8),
+                        ListView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: _doseTimes.length,
+                          itemBuilder: (context, index) {
+                            final time = _doseTimes[index];
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 4.0),
+                              child: Row(
+                                children: [
+                                  Text(
+                                    'Dose #${index + 1}:',
+                                    style: context.bodyMedium.copyWith(fontWeight: FontWeight.w500),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: OutlinedButton.icon(
+                                      onPressed: () async {
+                                        final selectedTime = await showTimePicker(
+                                          context: context,
+                                          initialTime: time,
+                                        );
+                                        if (selectedTime != null) {
+                                          setState(() {
+                                            _doseTimes[index] = selectedTime;
+                                          });
+                                        }
+                                      },
+                                      icon: const Icon(Icons.alarm, size: 16),
+                                      label: Text(
+                                        DateFormat('hh:mm a').format(
+                                          DateTime(2026, 1, 1, time.hour, time.minute),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 24),
+                        Text(
+                          'Duration',
+                          style: context.labelSmall.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: context.colors.textSecondary,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
                         Row(
                           children: [
                             Expanded(
@@ -794,7 +1189,43 @@ class _AddMedicineBottomSheetState extends State<AddMedicineBottomSheet> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: MediTrackSpacing.large),
+                        const SizedBox(height: 24),
+                        Text(
+                          'Care & Instructions (Apollo/Pharmeasy Style)',
+                          style: context.labelSmall.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: context.colors.textSecondary,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        TextFormField(
+                          controller: _instructionsController,
+                          style: context.bodyMedium,
+                          decoration: const InputDecoration(
+                            labelText: 'Instructions (e.g. Take with food)',
+                            prefixIcon: Icon(Icons.info_outline),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        TextFormField(
+                          controller: _precautionsController,
+                          style: context.bodyMedium,
+                          decoration: const InputDecoration(
+                            labelText: 'Precautions (e.g. Avoid alcohol)',
+                            prefixIcon: Icon(Icons.warning_amber_outlined),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        TextFormField(
+                          controller: _sideEffectsController,
+                          style: context.bodyMedium,
+                          decoration: const InputDecoration(
+                            labelText: 'Side Effects (e.g. Causes drowsiness)',
+                            prefixIcon: Icon(Icons.sick_outlined),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
                         SwitchListTile(
                           value: _enableReminders,
                           onChanged: (val) {
@@ -807,7 +1238,7 @@ class _AddMedicineBottomSheetState extends State<AddMedicineBottomSheet> {
                           subtitle: Text('Get notified at each dose time', style: context.bodySmall),
                           contentPadding: EdgeInsets.zero,
                         ),
-                        const SizedBox(height: MediTrackSpacing.large),
+                        const SizedBox(height: 40),
                       ],
                     ),
                   ),

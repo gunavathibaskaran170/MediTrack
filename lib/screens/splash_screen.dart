@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../theme/meditrack_theme.dart';
 import '../core/database_helper.dart';
+import 'package:lottie/lottie.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -65,15 +66,15 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
       debugPrint("Error seeding database on splash: $e");
     }
 
-    // 3. Check onboarding status
+    // 3. Check login status
     final prefs = await SharedPreferences.getInstance();
-    final onboardingComplete = prefs.getBool('onboarding_complete') ?? false;
+    final loggedIn = prefs.getBool('logged_in') ?? false;
 
     if (mounted) {
-      if (onboardingComplete) {
+      if (loggedIn) {
         Navigator.pushReplacementNamed(context, '/home');
       } else {
-        Navigator.pushReplacementNamed(context, '/onboarding');
+        Navigator.pushReplacementNamed(context, '/login');
       }
     }
   }
@@ -86,12 +87,22 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            ScaleTransition(
-              scale: _scaleAnimation,
-              child: Icon(
-                Icons.monitor_heart,
-                size: 100,
-                color: context.colors.primary,
+            SizedBox(
+              width: 120,
+              height: 120,
+              child: Lottie.network(
+                'https://lottie.host/8cd87532-68c3-4d43-a616-24e6503c1535/vA8T3iJplD.json',
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) {
+                  return ScaleTransition(
+                    scale: _scaleAnimation,
+                    child: Icon(
+                      Icons.monitor_heart,
+                      size: 100,
+                      color: context.colors.primary,
+                    ),
+                  );
+                },
               ),
             ),
             const SizedBox(height: MediTrackSpacing.large),

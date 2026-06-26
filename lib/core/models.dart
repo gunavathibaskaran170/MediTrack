@@ -12,6 +12,11 @@ class User {
   final String? ecPhone;
   final String? hospitalPhone;
   final String? createdAt;
+  final String? profession;
+  final String? organization;
+  final String? workEmail;
+  final String? workPhone;
+  final String? bio;
 
   User({
     this.id,
@@ -25,6 +30,11 @@ class User {
     this.ecPhone,
     this.hospitalPhone,
     this.createdAt,
+    this.profession,
+    this.organization,
+    this.workEmail,
+    this.workPhone,
+    this.bio,
   });
 
   Map<String, dynamic> toMap() {
@@ -40,6 +50,11 @@ class User {
       'ec_phone': ecPhone,
       'hospital_phone': hospitalPhone,
       'created_at': createdAt ?? DateTime.now().toIso8601String(),
+      'profession': profession,
+      'organization': organization,
+      'work_email': workEmail,
+      'work_phone': workPhone,
+      'bio': bio,
     };
   }
 
@@ -56,6 +71,11 @@ class User {
       ecPhone: map['ec_phone'] as String?,
       hospitalPhone: map['hospital_phone'] as String?,
       createdAt: map['created_at'] as String?,
+      profession: map['profession'] as String?,
+      organization: map['organization'] as String?,
+      workEmail: map['work_email'] as String?,
+      workPhone: map['work_phone'] as String?,
+      bio: map['bio'] as String?,
     );
   }
 }
@@ -140,6 +160,9 @@ class Medicine {
   final String? endDate;
   final bool isActive;
   final String? createdAt;
+  final String? instructions; // e.g. Take after food
+  final String? precautions;  // e.g. Avoid alcohol
+  final String? sideEffects;   // e.g. May cause drowsiness
 
   Medicine({
     this.id,
@@ -153,6 +176,9 @@ class Medicine {
     this.endDate,
     this.isActive = true,
     this.createdAt,
+    this.instructions,
+    this.precautions,
+    this.sideEffects,
   });
 
   Map<String, dynamic> toMap() {
@@ -168,6 +194,9 @@ class Medicine {
       'end_date': endDate,
       'is_active': isActive ? 1 : 0,
       'created_at': createdAt ?? DateTime.now().toIso8601String(),
+      'instructions': instructions,
+      'precautions': precautions,
+      'side_effects': sideEffects,
     };
   }
 
@@ -192,6 +221,9 @@ class Medicine {
       endDate: map['end_date'] as String?,
       isActive: (map['is_active'] as int? ?? 1) == 1,
       createdAt: map['created_at'] as String?,
+      instructions: map['instructions'] as String?,
+      precautions: map['precautions'] as String?,
+      sideEffects: map['side_effects'] as String?,
     );
   }
 }

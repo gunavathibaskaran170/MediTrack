@@ -41,7 +41,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 2,
+      version: 3,
       onCreate: _createDB,
       onUpgrade: _upgradeDB,
     );
@@ -60,7 +60,12 @@ class DatabaseHelper {
         ec_name TEXT,
         ec_phone TEXT,
         hospital_phone TEXT,
-        created_at TEXT
+        created_at TEXT,
+        profession TEXT,
+        organization TEXT,
+        work_email TEXT,
+        work_phone TEXT,
+        bio TEXT
       )
     ''');
 
@@ -94,7 +99,10 @@ class DatabaseHelper {
         start_date TEXT,
         end_date TEXT,
         is_active INTEGER,
-        created_at TEXT
+        created_at TEXT,
+        instructions TEXT,
+        precautions TEXT,
+        side_effects TEXT
       )
     ''');
 
@@ -193,11 +201,64 @@ class DatabaseHelper {
         debugPrint("Error creating sos_logs table: $e");
       }
     }
+    if (oldVersion < 3) {
+      try {
+        await db.execute('ALTER TABLE users ADD COLUMN profession TEXT');
+        await db.execute('ALTER TABLE users ADD COLUMN organization TEXT');
+        await db.execute('ALTER TABLE users ADD COLUMN work_email TEXT');
+        await db.execute('ALTER TABLE users ADD COLUMN work_phone TEXT');
+        await db.execute('ALTER TABLE users ADD COLUMN bio TEXT');
+      } catch (e) {
+        debugPrint("Error migrating users professional fields: $e");
+      }
+      try {
+        await db.execute('ALTER TABLE medicines ADD COLUMN instructions TEXT');
+        await db.execute('ALTER TABLE medicines ADD COLUMN precautions TEXT');
+        await db.execute('ALTER TABLE medicines ADD COLUMN side_effects TEXT');
+      } catch (e) {
+        debugPrint("Error migrating medicines care instructions: $e");
+      }
+    }
+  }
+
+  // --- WEB FALLBACK HELPERS ---
+  Future<User?> _getWebUser(int id) async {
+    final prefs = await SharedPreferences.getInstance();
+    final userJson = prefs.getString('web_user_$id');
+    if (userJson != null) {
+      return User.fromMap(jsonDecode(userJson));
+    }
+    if (id == 1) {
+      return User(
+        id: 1,
+        name: 'Rajan Kumar',
+        age: 58,
+        gender: 'Male',
+        bloodGroup: 'O+',
+        conditions: 'Diabetes,Hypertension',
+        allergies: 'Penicillin',
+        ecName: 'Priya Kumar',
+        ecPhone: '+91-98765-43210',
+        hospitalPhone: '+91-11-2345-6789',
+        profession: 'Senior Software Engineer',
+        organization: 'Apollo Hospitals Group',
+        workEmail: 'rajan.kumar@apollo.com',
+        workPhone: '+91-98765-99999',
+        bio: 'Passionate about healthcare tech and patient monitoring systems. Managing medications diligently.',
+      );
+    }
+    return null;
+  }
+
+  Future<int> _saveWebUser(User user) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('web_user_${user.id ?? 1}', jsonEncode(user.toMap()));
+    return user.id ?? 1;
   }
 
   // --- USER OPERATIONS ---
   Future<User?> getUser(int id) async {
-    if (kIsWeb) return null;
+    if (kIsWeb) return await _getWebUser(id);
     final db = await database;
     final maps = await db.query('users', where: 'id = ?', whereArgs: [id]);
     if (maps.isNotEmpty) {
@@ -207,11 +268,13 @@ class DatabaseHelper {
   }
 
   Future<int> insertUser(User user) async {
+    if (kIsWeb) return await _saveWebUser(user);
     final db = await database;
     return await db.insert('users', user.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   Future<int> updateUser(User user) async {
+    if (kIsWeb) return await _saveWebUser(user);
     final db = await database;
     return await db.update('users', user.toMap(), where: 'id = ?', whereArgs: [user.id]);
   }
@@ -283,29 +346,161 @@ class DatabaseHelper {
     return await db.delete('vitals', where: 'id = ?', whereArgs: [id]);
   }
 
+  // --- WEB MEDICINES HELPERS ---
+  Future<List<Medicine>> _getWebMedicines() async {
+    final prefs = await SharedPreferences.getInstance();
+    final medicinesJson = prefs.getString('web_medicines');
+    if (medicinesJson != null) {
+      final List<dynamic> list = jsonDecode(medicinesJson);
+      return list.map((e) => Medicine.fromMap(e)).toList();
+    }
+    final defaultList = [
+      Medicine(
+        id: 1,
+        name: 'Metformin Hydrochloride 500mg',
+        dosage: 1,
+        unit: 'tablet(s)',
+        frequency: 'Twice daily',
+        reminderTimes: ['08:00', '20:30'],
+        startDate: '2026-06-01',
+        isActive: true,
+        instructions: 'Take with or immediately after food to reduce stomach upset.',
+        precautions: 'Do not take with excessive alcohol. Monitor blood sugar levels regularly.',
+        sideEffects: 'May cause mild nausea, diarrhea, or metallic taste initially.',
+      ),
+      Medicine(
+        id: 2,
+        name: 'Atorvastatin 10mg',
+        dosage: 1,
+        unit: 'tablet(s)',
+        frequency: 'Once daily (Night)',
+        reminderTimes: ['21:30'],
+        startDate: '2026-06-01',
+        isActive: true,
+        instructions: 'Take at night. Can be taken with or without food.',
+        precautions: 'Avoid drinking grapefruit juice. Inform doctor if muscle pain occurs.',
+        sideEffects: 'Mild headache, muscle aches, or nasal congestion.',
+      ),
+      Medicine(
+        id: 3,
+        name: 'Amlodipine 5mg',
+        dosage: 1,
+        unit: 'tablet(s)',
+        frequency: 'Once daily (Morning)',
+        reminderTimes: ['09:00'],
+        startDate: '2026-06-01',
+        isActive: true,
+        instructions: 'Take in the morning. Swallow whole with a glass of water.',
+        precautions: 'Avoid sudden posture changes to prevent dizziness. Do not skip doses.',
+        sideEffects: 'Ankle swelling, dizziness, flushing, or fatigue.',
+      ),
+      Medicine(
+        id: 4,
+        name: 'Paracetamol 650mg',
+        dosage: 1,
+        unit: 'tablet(s)',
+        frequency: 'As needed (SOS)',
+        reminderTimes: ['14:00'],
+        startDate: '2026-06-01',
+        isActive: false,
+        instructions: 'Take after food for mild pain or fever. Maintain 4-6 hours gap.',
+        precautions: 'Do not exceed 4 tablets in 24 hours. Avoid if taking other paracetamol products.',
+        sideEffects: 'Rare, but skin rash or liver damage on high overdose.',
+      ),
+    ];
+    await prefs.setString('web_medicines', jsonEncode(defaultList.map((e) => e.toMap()).toList()));
+    return defaultList;
+  }
+
+  Future<int> _saveWebMedicine(Medicine med) async {
+    final prefs = await SharedPreferences.getInstance();
+    final list = await _getWebMedicines();
+    int newId = med.id ?? DateTime.now().millisecondsSinceEpoch;
+    final newMed = Medicine(
+      id: newId,
+      userId: med.userId,
+      name: med.name,
+      dosage: med.dosage,
+      unit: med.unit,
+      frequency: med.frequency,
+      reminderTimes: med.reminderTimes,
+      startDate: med.startDate,
+      endDate: med.endDate,
+      isActive: med.isActive,
+      createdAt: med.createdAt,
+      instructions: med.instructions,
+      precautions: med.precautions,
+      sideEffects: med.sideEffects,
+    );
+    list.removeWhere((e) => e.id == newId);
+    list.add(newMed);
+    await prefs.setString('web_medicines', jsonEncode(list.map((e) => e.toMap()).toList()));
+    return newId;
+  }
+
+  Future<int> _deleteWebMedicine(int id) async {
+    final prefs = await SharedPreferences.getInstance();
+    final list = await _getWebMedicines();
+    list.removeWhere((e) => e.id == id);
+    await prefs.setString('web_medicines', jsonEncode(list.map((e) => e.toMap()).toList()));
+    return 1;
+  }
+
+  Future<int> _toggleWebMedicineActive(int id, int active) async {
+    final prefs = await SharedPreferences.getInstance();
+    final list = await _getWebMedicines();
+    final index = list.indexWhere((e) => e.id == id);
+    if (index != -1) {
+      final med = list[index];
+      list[index] = Medicine(
+        id: med.id,
+        userId: med.userId,
+        name: med.name,
+        dosage: med.dosage,
+        unit: med.unit,
+        frequency: med.frequency,
+        reminderTimes: med.reminderTimes,
+        startDate: med.startDate,
+        endDate: med.endDate,
+        isActive: active == 1,
+        createdAt: med.createdAt,
+        instructions: med.instructions,
+        precautions: med.precautions,
+        sideEffects: med.sideEffects,
+      );
+      await prefs.setString('web_medicines', jsonEncode(list.map((e) => e.toMap()).toList()));
+    }
+    return 1;
+  }
+
   // --- MEDICINE OPERATIONS ---
   Future<List<Medicine>> getMedicines() async {
+    if (kIsWeb) return await _getWebMedicines();
     final db = await database;
     final maps = await db.query('medicines', orderBy: 'id DESC');
     return maps.map((m) => Medicine.fromMap(m)).toList();
   }
 
   Future<int> insertMedicine(Medicine medicine) async {
+    if (kIsWeb) return await _saveWebMedicine(medicine);
     final db = await database;
     return await db.insert('medicines', medicine.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   Future<int> updateMedicine(Medicine medicine) async {
+    if (kIsWeb) return await _saveWebMedicine(medicine);
     final db = await database;
     return await db.update('medicines', medicine.toMap(), where: 'id = ?', whereArgs: [medicine.id]);
   }
 
   Future<int> deleteMedicine(int id) async {
+    if (kIsWeb) return await _deleteWebMedicine(id);
     final db = await database;
     return await db.delete('medicines', where: 'id = ?', whereArgs: [id]);
   }
 
   Future<int> toggleMedicineActive(int id, int active) async {
+    if (kIsWeb) return await _toggleWebMedicineActive(id, active);
     final db = await database;
     return await db.update('medicines', {'is_active': active}, where: 'id = ?', whereArgs: [id]);
   }
@@ -430,7 +625,13 @@ class DatabaseHelper {
       'allergies': 'Penicillin',
       'ec_name': 'Priya Kumar',
       'ec_phone': '+91-98765-43210',
-      'created_at': nowString
+      'hospital_phone': '+91-11-2345-6789',
+      'created_at': nowString,
+      'profession': 'Senior Software Engineer',
+      'organization': 'Apollo Hospitals Group',
+      'work_email': 'rajan.kumar@apollo.com',
+      'work_phone': '+91-98765-99999',
+      'bio': 'Passionate about healthcare tech and patient monitoring systems. Managing medications diligently.',
     });
 
     final random = Random();
@@ -459,51 +660,63 @@ class DatabaseHelper {
     final medicinesList = [
       {
         'id': 1,
-        'name': 'Metformin',
-        'dosage': 500.0,
-        'unit': 'mg',
+        'name': 'Metformin Hydrochloride 500mg',
+        'dosage': 1.0,
+        'unit': 'tablet(s)',
         'frequency': 'Twice daily',
-        'reminder_times': jsonEncode(['08:00', '20:00']),
+        'reminder_times': jsonEncode(['08:00', '20:30']),
         'start_date': dateFormat.format(today.subtract(const Duration(days: 35))),
         'end_date': '',
         'is_active': 1,
-        'created_at': nowString
+        'created_at': nowString,
+        'instructions': 'Take with or immediately after food to reduce stomach upset.',
+        'precautions': 'Do not take with excessive alcohol. Monitor blood sugar levels regularly.',
+        'side_effects': 'May cause mild nausea, diarrhea, or metallic taste initially.'
       },
       {
         'id': 2,
-        'name': 'Amlodipine',
-        'dosage': 5.0,
-        'unit': 'mg',
-        'frequency': 'Once daily',
-        'reminder_times': jsonEncode(['08:00']),
+        'name': 'Atorvastatin 10mg',
+        'dosage': 1.0,
+        'unit': 'tablet(s)',
+        'frequency': 'Once daily (Night)',
+        'reminder_times': jsonEncode(['21:30']),
         'start_date': dateFormat.format(today.subtract(const Duration(days: 35))),
         'end_date': '',
         'is_active': 1,
-        'created_at': nowString
+        'created_at': nowString,
+        'instructions': 'Take at night. Can be taken with or without food.',
+        'precautions': 'Avoid drinking grapefruit juice. Inform doctor if muscle pain occurs.',
+        'side_effects': 'Mild headache, muscle aches, or nasal congestion.'
       },
       {
         'id': 3,
-        'name': 'Losartan',
-        'dosage': 50.0,
-        'unit': 'mg',
-        'frequency': 'Once daily',
-        'reminder_times': jsonEncode(['20:00']),
+        'name': 'Amlodipine 5mg',
+        'dosage': 1.0,
+        'unit': 'tablet(s)',
+        'frequency': 'Once daily (Morning)',
+        'reminder_times': jsonEncode(['09:00']),
         'start_date': dateFormat.format(today.subtract(const Duration(days: 35))),
         'end_date': '',
         'is_active': 1,
-        'created_at': nowString
+        'created_at': nowString,
+        'instructions': 'Take in the morning. Swallow whole with a glass of water.',
+        'precautions': 'Avoid sudden posture changes to prevent dizziness. Do not skip doses.',
+        'side_effects': 'Ankle swelling, dizziness, flushing, or fatigue.'
       },
       {
         'id': 4,
-        'name': 'Aspirin',
-        'dosage': 75.0,
-        'unit': 'mg',
-        'frequency': 'Once daily',
-        'reminder_times': jsonEncode(['08:00']),
+        'name': 'Paracetamol 650mg',
+        'dosage': 1.0,
+        'unit': 'tablet(s)',
+        'frequency': 'As needed (SOS)',
+        'reminder_times': jsonEncode(['14:00']),
         'start_date': dateFormat.format(today.subtract(const Duration(days: 35))),
         'end_date': '',
-        'is_active': 1,
-        'created_at': nowString
+        'is_active': 0,
+        'created_at': nowString,
+        'instructions': 'Take after food for mild pain or fever. Maintain 4-6 hours gap.',
+        'precautions': 'Do not exceed 4 tablets in 24 hours. Avoid if taking other paracetamol products.',
+        'side_effects': 'Rare, but skin rash or liver damage on high overdose.'
       }
     ];
 
@@ -516,10 +729,9 @@ class DatabaseHelper {
       final dateStr = dateFormat.format(date);
 
       _addLog(batch, random, 1, dateStr, '08:00');
-      _addLog(batch, random, 1, dateStr, '20:00');
-      _addLog(batch, random, 2, dateStr, '08:00');
-      _addLog(batch, random, 3, dateStr, '20:00');
-      _addLog(batch, random, 4, dateStr, '08:00');
+      _addLog(batch, random, 1, dateStr, '20:30');
+      _addLog(batch, random, 2, dateStr, '21:30');
+      _addLog(batch, random, 3, dateStr, '09:00');
     }
 
     final symptomList = [

@@ -175,7 +175,7 @@ class MediTrackTheme {
       scaffoldBackgroundColor: colors.background,
       
       // Card Theme Setup
-      cardTheme: CardThemeData(
+      cardTheme: CardTheme(
         color: colors.card,
         elevation: 0,
         shape: RoundedRectangleBorder(

@@ -64,6 +64,7 @@ class _HeartRateVitalCardState extends State<HeartRateVitalCard> with SingleTick
       valueText: '$hrVal bpm',
       icon: Icons.monitor_heart,
       iconBgColor: targetColor,
+      customIconWidget: PulsingHeartIcon(color: targetColor, bpm: widget.heartRate ?? 70.0),
       chartWidget: RepaintBoundary(
         child: SizedBox(
           width: 80,
@@ -73,13 +74,15 @@ class _HeartRateVitalCardState extends State<HeartRateVitalCard> with SingleTick
             duration: const Duration(milliseconds: 500),
             builder: (context, animatedColor, child) {
               final color = animatedColor ?? targetColor;
-              return AnimatedBuilder(
-                animation: _animation,
-                builder: (context, child) {
-                  return CustomPaint(
-                    painter: HeartbeatPainter(progress: _animation.value, color: color),
-                  );
-                },
+              return ClipRect(
+                child: AnimatedBuilder(
+                  animation: _animation,
+                  builder: (context, child) {
+                    return CustomPaint(
+                      painter: HeartbeatPainter(progress: _animation.value, color: color),
+                    );
+                  },
+                ),
               );
             },
           ),
@@ -350,54 +353,64 @@ class _BloodSugarVitalCardState extends State<BloodSugarVitalCard> with SingleTi
       chartWidget: SizedBox(
         width: 80,
         height: 36,
-        child: AnimatedBuilder(
-          animation: _animation,
-          builder: (context, child) {
-            final animatedSpots = <FlSpot>[];
-            if (spots.isNotEmpty) {
-              final double baselineY = spots.first.y;
-              for (int i = 0; i < spots.length; i++) {
-                final spot = spots[i];
-                double spotProgress = (_animation.value * spots.length - i).clamp(0.0, 1.0);
-                double animatedY = baselineY + (spot.y - baselineY) * spotProgress;
-                animatedSpots.add(FlSpot(spot.x, animatedY));
-              }
-            }
-            return LineChart(
-              LineChartData(
-                minX: 0,
-                maxX: spots.length - 1,
-                minY: 40,
-                maxY: 200,
-                lineTouchData: const LineTouchData(enabled: false),
-                gridData: const FlGridData(show: false),
-                titlesData: const FlTitlesData(show: false),
-                borderData: FlBorderData(show: false),
-                lineBarsData: [
-                  LineChartBarData(
-                    spots: animatedSpots,
-                    isCurved: true,
-                    curveSmoothness: 0.3,
-                    color: widget.statusColor,
-                    barWidth: 2.2,
-                    isStrokeCapRound: true,
-                    dotData: const FlDotData(show: false),
-                    belowBarData: BarAreaData(
-                      show: true,
-                      gradient: LinearGradient(
-                        colors: [
-                          widget.statusColor.withOpacity(0.20),
-                          widget.statusColor.withOpacity(0.0),
-                        ],
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                      ),
-                    ),
-                  ),
-                ],
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: SugarWaveWidget(
+                sugar: widget.sugar ?? 90,
+                color: widget.statusColor,
               ),
-            );
-          },
+            ),
+            AnimatedBuilder(
+              animation: _animation,
+              builder: (context, child) {
+                final animatedSpots = <FlSpot>[];
+                if (spots.isNotEmpty) {
+                  final double baselineY = spots.first.y;
+                  for (int i = 0; i < spots.length; i++) {
+                    final spot = spots[i];
+                    double spotProgress = (_animation.value * spots.length - i).clamp(0.0, 1.0);
+                    double animatedY = baselineY + (spot.y - baselineY) * spotProgress;
+                    animatedSpots.add(FlSpot(spot.x, animatedY));
+                  }
+                }
+                return LineChart(
+                  LineChartData(
+                    minX: 0,
+                    maxX: spots.length - 1,
+                    minY: 40,
+                    maxY: 200,
+                    lineTouchData: const LineTouchData(enabled: false),
+                    gridData: const FlGridData(show: false),
+                    titlesData: const FlTitlesData(show: false),
+                    borderData: FlBorderData(show: false),
+                    lineBarsData: [
+                      LineChartBarData(
+                        spots: animatedSpots,
+                        isCurved: true,
+                        curveSmoothness: 0.3,
+                        color: widget.statusColor,
+                        barWidth: 2.2,
+                        isStrokeCapRound: true,
+                        dotData: const FlDotData(show: false),
+                        belowBarData: BarAreaData(
+                          show: true,
+                          gradient: LinearGradient(
+                            colors: [
+                              widget.statusColor.withOpacity(0.20),
+                              widget.statusColor.withOpacity(0.0),
+                            ],
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ],
         ),
       ),
     );
@@ -771,6 +784,7 @@ class _VitalCardScaffold extends StatelessWidget {
   final Widget chartWidget;
   final IconData icon;
   final Color iconBgColor;
+  final Widget? customIconWidget;
 
   const _VitalCardScaffold({
     required this.label,
@@ -781,6 +795,7 @@ class _VitalCardScaffold extends StatelessWidget {
     required this.chartWidget,
     required this.icon,
     required this.iconBgColor,
+    this.customIconWidget,
   });
 
   @override
@@ -830,7 +845,7 @@ class _VitalCardScaffold extends StatelessWidget {
                   // Top Row: Icon container + Label
                   Row(
                     children: [
-                      Container(
+                      customIconWidget ?? Container(
                         padding: const EdgeInsets.all(4),
                         decoration: BoxDecoration(
                           color: iconBgColor.withOpacity(0.1),
@@ -890,4 +905,158 @@ class _VitalCardScaffold extends StatelessWidget {
       ),
     );
   }
+}
+
+// ----------------------------------------------------
+// PULSING HEART ICON (LIVE SYNC WITH BPM)
+// ----------------------------------------------------
+class PulsingHeartIcon extends StatefulWidget {
+  final Color color;
+  final double bpm;
+  const PulsingHeartIcon({super.key, required this.color, required this.bpm});
+
+  @override
+  State<PulsingHeartIcon> createState() => _PulsingHeartIconState();
+}
+
+class _PulsingHeartIconState extends State<PulsingHeartIcon> with SingleTickerProviderStateMixin {
+  late AnimationController _pulseController;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    final durationMs = (60000 / widget.bpm).round();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: Duration(milliseconds: durationMs),
+    )..repeat(reverse: true);
+    _scaleAnimation = Tween<double>(begin: 0.85, end: 1.15).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void didUpdateWidget(covariant PulsingHeartIcon oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.bpm != widget.bpm) {
+      final durationMs = (60000 / widget.bpm).round();
+      _pulseController.duration = Duration(milliseconds: durationMs);
+      _pulseController.repeat(reverse: true);
+    }
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: widget.color.withOpacity(0.1),
+        shape: BoxShape.circle,
+      ),
+      child: ScaleTransition(
+        scale: _scaleAnimation,
+        child: Icon(
+          Icons.favorite,
+          size: 14,
+          color: widget.color,
+        ),
+      ),
+    );
+  }
+}
+
+// ----------------------------------------------------
+// SUGAR LEVEL LIQUID WAVE ANIMATION
+// ----------------------------------------------------
+class SugarWaveWidget extends StatefulWidget {
+  final double sugar;
+  final Color color;
+  const SugarWaveWidget({super.key, required this.sugar, required this.color});
+
+  @override
+  State<SugarWaveWidget> createState() => _SugarWaveWidgetState();
+}
+
+class _SugarWaveWidgetState extends State<SugarWaveWidget> with SingleTickerProviderStateMixin {
+  late AnimationController _waveController;
+
+  @override
+  void initState() {
+    super.initState();
+    _waveController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _waveController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final fillPercentage = ((widget.sugar - 40) / 160).clamp(0.12, 0.88);
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: AnimatedBuilder(
+        animation: _waveController,
+        builder: (context, child) {
+          return CustomPaint(
+            painter: LiquidWavePainter(
+              waveValue: _waveController.value,
+              fillPercentage: fillPercentage,
+              color: widget.color.withOpacity(0.08),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class LiquidWavePainter extends CustomPainter {
+  final double waveValue;
+  final double fillPercentage;
+  final Color color;
+  LiquidWavePainter({required this.waveValue, required this.fillPercentage, required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
+
+    final path = Path();
+    final double waveHeight = 3.0;
+    final double baseHeight = size.height * (1.0 - fillPercentage);
+
+    path.moveTo(0, size.height);
+    path.lineTo(0, baseHeight);
+
+    for (double x = 0; x <= size.width; x++) {
+      final double y = baseHeight + math.sin(x * 0.08 + waveValue * 2 * math.pi) * waveHeight;
+      path.lineTo(x, y);
+    }
+
+    path.lineTo(size.width, size.height);
+    path.close();
+
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant LiquidWavePainter oldDelegate) =>
+      oldDelegate.waveValue != waveValue ||
+      oldDelegate.fillPercentage != fillPercentage ||
+      oldDelegate.color != color;
 }

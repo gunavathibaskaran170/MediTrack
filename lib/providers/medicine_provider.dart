@@ -95,6 +95,9 @@ class MedicineProvider with ChangeNotifier {
         endDate: m.endDate,
         isActive: m.isActive,
         createdAt: m.createdAt,
+        instructions: m.instructions,
+        precautions: m.precautions,
+        sideEffects: m.sideEffects,
       );
 
       // Schedule reminders
