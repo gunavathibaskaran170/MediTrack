@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart';
@@ -14,6 +15,7 @@ class DatabaseHelper {
   DatabaseHelper._init();
 
   Future<Database> get database async {
+    if (kIsWeb) throw UnsupportedError("SQLite not supported on Web");
     if (_database != null) return _database!;
     _database = await _initDB('meditrack.db');
     return _database!;
@@ -22,6 +24,20 @@ class DatabaseHelper {
   Future<Database> _initDB(String filePath) async {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, filePath);
+    debugPrint("SQLITE DATABASE PATH: $path");
+
+    if (!kIsWeb) {
+      try {
+        final dir = Directory('c:/Users/AMRUDAVARSHINI/Downloads/Hardware');
+        if (await dir.exists()) {
+          final file = File('${dir.path}/db_path.txt');
+          await file.writeAsString(path);
+          debugPrint("Successfully wrote database path to db_path.txt");
+        }
+      } catch (e) {
+        debugPrint("Error writing database path to db_path.txt: $e");
+      }
+    }
 
     return await openDatabase(
       path,
@@ -181,6 +197,7 @@ class DatabaseHelper {
 
   // --- USER OPERATIONS ---
   Future<User?> getUser(int id) async {
+    if (kIsWeb) return null;
     final db = await database;
     final maps = await db.query('users', where: 'id = ?', whereArgs: [id]);
     if (maps.isNotEmpty) {
@@ -201,6 +218,7 @@ class DatabaseHelper {
 
   // --- VITALS OPERATIONS ---
   Future<List<Vital>> getVitals({int? limitDays}) async {
+    if (kIsWeb) return [];
     final db = await database;
     if (limitDays != null) {
       final dateFormat = DateFormat('yyyy-MM-dd');
@@ -210,19 +228,40 @@ class DatabaseHelper {
         'vitals',
         where: 'date >= ?',
         whereArgs: [cutoffStr],
-        orderBy: 'date DESC',
+        orderBy: 'date DESC, created_at DESC',
       );
       return maps.map((m) => Vital.fromMap(m)).toList();
     } else {
-      final maps = await db.query('vitals', orderBy: 'date DESC');
+      final maps = await db.query('vitals', orderBy: 'date DESC, created_at DESC');
       return maps.map((m) => Vital.fromMap(m)).toList();
     }
   }
 
   Future<Vital?> getTodayVitals() async {
+    if (kIsWeb) return null;
     final db = await database;
     final todayStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
-    final maps = await db.query('vitals', where: 'date = ?', whereArgs: [todayStr]);
+    final maps = await db.query(
+      'vitals',
+      where: 'date = ?',
+      whereArgs: [todayStr],
+      orderBy: 'created_at DESC',
+      limit: 1,
+    );
+    if (maps.isNotEmpty) {
+      return Vital.fromMap(maps.first);
+    }
+    return null;
+  }
+
+  Future<Vital?> getLatestVital() async {
+    if (kIsWeb) return null;
+    final db = await database;
+    final maps = await db.query(
+      'vitals',
+      orderBy: 'created_at DESC',
+      limit: 1,
+    );
     if (maps.isNotEmpty) {
       return Vital.fromMap(maps.first);
     }
@@ -371,6 +410,7 @@ class DatabaseHelper {
 
   // --- SEEDER LOGIC ---
   Future<void> seedDemoDataIfNeeded() async {
+    if (kIsWeb) return;
     final prefs = await SharedPreferences.getInstance();
     final isSeeded = prefs.getBool('demo_seeded') ?? false;
 

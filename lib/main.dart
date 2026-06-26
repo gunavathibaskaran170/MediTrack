@@ -11,6 +11,7 @@ import 'screens/prescriptions_screen.dart';
 import 'screens/health_report.dart';
 import 'screens/emergency_sos.dart';
 import 'screens/edit_profile_screen.dart';
+import 'screens/vitals_analysis_screen.dart';
 
 import 'theme/meditrack_theme.dart';
 import 'providers/user_provider.dart';
@@ -68,6 +69,7 @@ class MediTrackApp extends StatelessWidget {
         '/onboarding': (context) => const OnboardingScreen(),
         '/home': (context) => const NavigationShell(initialTab: 0),
         '/vitals/log': (context) => const VitalsLoggingScreen(),
+        '/vitals/analysis': (context) => const VitalsAnalysisScreen(),
         '/vitals/history': (context) => const NavigationShell(initialTab: 1),
         '/medicines': (context) => const NavigationShell(initialTab: 2),
         '/analytics': (context) => const NavigationShell(initialTab: 3),

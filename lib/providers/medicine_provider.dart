@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../core/models.dart';
@@ -65,6 +66,10 @@ class MedicineProvider with ChangeNotifier {
   }
 
   Future<void> loadTodayLogs() async {
+    if (kIsWeb) {
+      _todayLogs = [];
+      return;
+    }
     final todayStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
     final db = await DatabaseHelper.instance.database;
     final maps = await db.query(
@@ -254,6 +259,13 @@ class MedicineProvider with ChangeNotifier {
 
   // --- COMPUTE COMPLIANCE / ADHERENCE ---
   Future<void> loadWeeklyAdherence() async {
+    if (kIsWeb) {
+      _takenThisWeek = 0;
+      _missedThisWeek = 0;
+      _weeklyAdherence = 0.0;
+      notifyListeners();
+      return;
+    }
     try {
       final now = DateTime.now();
       // Monday of current calendar week

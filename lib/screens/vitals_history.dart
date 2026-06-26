@@ -534,6 +534,11 @@ class _VitalsHistoryState extends State<VitalsHistory> with SingleTickerProvider
         title: Text('Vitals History', style: context.titleLarge),
         actions: [
           IconButton(
+            icon: Icon(Icons.analytics_outlined, color: context.colors.primary),
+            tooltip: 'Checkup Analysis',
+            onPressed: () => Navigator.pushNamed(context, '/analytics'),
+          ),
+          IconButton(
             icon: Icon(Icons.filter_list, color: context.colors.textPrimary),
             onPressed: _showFilterBottomSheet,
           ),

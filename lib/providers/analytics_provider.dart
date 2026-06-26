@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../core/models.dart';
@@ -33,6 +34,18 @@ class AnalyticsProvider with ChangeNotifier {
     notifyListeners();
 
     try {
+      if (kIsWeb) {
+        _analyticsData = {
+          'bpData': [],
+          'sugarData': [],
+          'adherenceData': {'taken': 0, 'missed': 0, 'snoozed': 0},
+          'symptomFrequency': {},
+          'statSummaries': {'avg_hr': 0.0, 'avg_spo2': 0.0, 'avg_weight': 0.0, 'avg_temp': 0.0},
+        };
+        _isLoading = false;
+        notifyListeners();
+        return;
+      }
       final days = _getPeriodDays();
       final db = await DatabaseHelper.instance.database;
 

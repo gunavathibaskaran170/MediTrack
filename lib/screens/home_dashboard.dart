@@ -389,9 +389,9 @@ class _HomeDashboardState extends State<HomeDashboard>
                               _buildSectionHeader(
                                 context: context,
                                 title: "Today's Vitals",
-                                actionText: "Log Now →",
+                                actionText: "Checkup Analysis →",
                                 onActionTap: () =>
-                                    Navigator.pushNamed(context, '/vitals/log'),
+                                    Navigator.pushNamed(context, '/analytics'),
                               ),
                               const SizedBox(
                                   height: MediTrackSpacing.titleToContentGap),
