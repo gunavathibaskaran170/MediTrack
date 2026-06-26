@@ -1,231 +1,146 @@
-
 # 🏥 MediTrack
 
-> Your Personal Health Tracking & Medication Management Companion
+> Your Secure, Offline-First Personal Health Companion & Medication Tracking Application.
 
-![Flutter](https://img.shields.io/badge/Flutter-3.x-blue?logo=flutter)
-![Firebase](https://img.shields.io/badge/Firebase-Backend-orange?logo=firebase)
-![Dart](https://img.shields.io/badge/Dart-Language-0175C2?logo=dart)
-![HealthTech](https://img.shields.io/badge/Category-HealthTech-green)
-![Status](https://img.shields.io/badge/Status-In%20Development-yellow)
-![License](https://img.shields.io/badge/License-MIT-lightgrey)
+[![Flutter](https://img.shields.io/badge/Flutter-3.x-blue?logo=flutter)](https://flutter.dev)
+[![Dart](https://img.shields.io/badge/Dart-Language-0175C2?logo=dart)](https://dart.dev)
+[![Database](https://img.shields.io/badge/Database-SQLite%20(Sqflite)-003B57?logo=sqlite)](https://github.com/tekartik/sqflite)
+[![Deployment](https://img.shields.io/badge/Deploy-Vercel-black?logo=vercel)](https://vercel.com)
+[![Category](https://img.shields.io/badge/Category-HealthTech-green)](#)
+[![License](https://img.shields.io/badge/License-MIT-lightgrey)](#)
 
 ---
 
 ## 📋 Overview
 
-**MediTrack** is a comprehensive HealthTech mobile application designed to help individuals manage chronic health conditions, medication schedules, vital records, doctor visits, prescriptions, and emergency situations — all from a single platform.
-MediTrack acts as a digital health companion that assists users in maintaining their healthcare routine through smart reminders, tracking systems, visual analytics, and PDF report generation.
+**MediTrack** is a high-fidelity, comprehensive HealthTech web and mobile application designed to help individuals track their chronic health conditions, vital checkups, medication regimens, doctor follow-ups, and emergency alerts. 
+
+By leveraging a secure, **offline-first local database architecture (SQLite)**, MediTrack guarantees user health privacy while providing premium features like real-time interactive vital animations, clinical hospital synchronization selectors, dynamic health profile QR codes, and automated PDF medical report exports.
 
 ---
 
-## 🔍 Problem Statement
+## 🌟 Key Features
 
-Millions of people with chronic illnesses — diabetes, hypertension, heart disease, asthma, post-surgery recovery — struggle to maintain their daily healthcare routines. Common challenges include:
+### 🔐 Secure Authentication & Detailed Sign Up
+- **Demographic profile mapping**: Track medical metrics (blood group, allergies, existing chronic diseases).
+- **Hospital Connection**: Select and synchronize clinical records with a local health provider database.
+- **Emergency Contacts**: Record emergency helper details directly in local secure memory.
 
-- Forgetting medications or dosage schedules
-- Inconsistent vital tracking
-- Losing prescriptions and medical records
-- Difficulty sharing health history with doctors
-- Poor treatment adherence over time
+### 📊 Health Analytics Dashboard
+Features a dynamic grid containing **six premium interactive visual animations** placed in a horizontal layout to prevent empty space:
+* **Heart Rate**: A beating heart icon pulsing in sync with user BPM over a rolling background ECG cardiogram.
+* **Blood Pressure**: A dual-ring circular progress gauge representing Systolic (outer) and Diastolic (inner) values.
+* **Blood Sugar**: A fluid liquid wave gauge displaying glucose saturation levels with a floating droplet icon.
+* **Oxygen Saturation**: A rotating radial progress gauge with a breathing air icon in the center.
+* **Body Temperature**: A mercury-filled thermometer indicator indicating degrees alongside rising heat waves.
+* **Body Weight**: A weight scale gauge with a needle that dynamically sweeps to weight marks with an elastic bounce.
 
-Existing solutions often address only one aspect of healthcare management, forcing users to juggle multiple apps. **MediTrack solves this** by providing a centralized platform that unifies everything.
+### 💊 Medication Tracker & Care Guidelines
+- Add and schedule medicine routines with precise dosage, frequency, and duration.
+- View clinical instructions, precautions, and side effects side-by-side.
+- Integration of a quick-action banner to call pharmacy support or order replacements.
 
----
+### 📱 Dynamic QR Medical Card
+- Generates a high-fidelity QR Code containing full demographic, chronic condition, and clinical details in JSON format.
+- Ideal for emergency personnel or doctors to scan and immediately understand user medical parameters.
 
-## ✨ Features
-
-### 🔐 Authentication & Profile Management
-- Secure registration and login
-- Personal medical profile (blood group, allergies, existing conditions)
-- Emergency contact storage
-
-### 📊 Vital Tracking
-Track and visualize key health metrics:
-| Vital | Details |
-|---|---|
-| Blood Pressure | Systolic & Diastolic |
-| Blood Sugar | Fasting & Post-meal |
-| Body Temperature | Daily readings |
-| Weight | Progress over time |
-| SpO2 | Oxygen saturation |
-| Heart Rate | Daily monitoring |
-
-- Daily logging with weekly & monthly trend views
-- Color-coded health indicators
-
-### 💊 Medication Management
-- Add, edit, and delete medicines
-- Set dosage, frequency, start/end dates
-- Supported frequencies: once daily, twice daily, three times daily, every X hours, custom
-
-### 🔔 Smart Medication Reminders
-- Scheduled push notifications
-- Mark as Taken / Missed / Snooze actions
-- Missed dose alerts
-
-### 📈 Adherence Tracking
-- Adherence percentage by week and month
-- Missed dose counts and daily completion rates
-
-### 🏥 Doctor Visit Management
-- Log doctor name, hospital, date, consultation notes
-- Track follow-up appointments
-
-### 📄 Prescription Management
-- Upload prescription images or PDFs (JPG, PNG, PDF)
-- View and search past prescriptions
-
-### 📉 Dashboard & Analytics
-- Health overview with medication and vital summaries
-- Line charts, bar charts, pie charts, and progress indicators
-
-### 📑 PDF Health Report Generation
-- Generate downloadable reports including vitals, medications, doctor visits, and prescriptions
-- Ideal for doctor consultations and health reviews
-
-### 🚨 Emergency SOS
-- One-tap SOS trigger
-- Shares location, blood group, conditions, allergies, and emergency contacts with designated people
+### 🔔 Smart Reminders & SOS Actions
+- Push notifications for medication dosages and vital logging schedules.
+- Tap-to-SOS trigger to share allergy records, medical profiles, and coordinates during emergencies.
+- PDF Report Generator: Exports consolidated logs of vitals history, schedules, and clinical logs.
 
 ---
 
 ## 🏗️ Architecture
 
 ```
-Flutter UI
-    │
-    ▼
-Providers / Controllers
-    │
-    ▼
-Repositories
-    │
-    ▼
-Services Layer
-    │
-    ▼
-Firebase Firestore
-    │
-    ▼
-Firebase Cloud Storage
+Flutter UI (Web & Desktop)
+        │
+        ▼
+   Providers (State Management)
+        │
+        ▼
+  Local SQLite (Sqflite Helper)
+        │
+        ▼
+   Vercel Hosting (Static Output)
 ```
 
 ---
 
-## 📁 Project Structure
+## 📁 Folder Directory Structure
 
 ```
 meditrack/
+├── assets/                 # Graphics, logos, and medical illustrations
 ├── lib/
-│   ├── main.dart
-│   ├── core/               # Constants, routes, theme, utils, validators
-│   ├── shared/             # Shared widgets, components, services
-│   ├── models/             # Data models (user, vitals, medicine, etc.)
-│   ├── repositories/       # Data access layer
-│   ├── services/           # Firebase, notifications, PDF, SOS
-│   ├── providers/          # State management
-│   ├── features/
-│   │   ├── auth/
-│   │   ├── profile/
-│   │   ├── vitals/
-│   │   ├── medication/
-│   │   ├── doctor_visits/
-│   │   ├── prescriptions/
-│   │   ├── dashboard/
-│   │   ├── analytics/
-│   │   ├── reports/
-│   │   └── emergency/
-│   └── firebase/
-├── assets/
-├── test/
-├── pubspec.yaml
+│   ├── main.dart           # App bootstrap and route navigator registry
+│   ├── core/               # SQLite database schemas and data models
+│   ├── providers/          # Provider controllers (User, Vitals, Medicine, Analytics)
+│   ├── screens/            # UI Screens (Analytics, Vitals Logging, Sign Up, Profile)
+│   ├── services/           # PDF compiler, notifications, and SOS services
+│   ├── theme/              # MediTrack custom color system and typography
+│   └── widgets/            # Custom painters, floating particle nodes, vital animations
+├── web/                    # Vercel routing configurations and index.html template
+├── pubspec.yaml            # Package dependencies configuration
 └── README.md
 ```
 
 ---
 
-## 🗄️ Firestore Collections
-
-```
-Firestore
-├── users
-├── vitals
-├── medicines
-├── medication_logs
-├── doctor_visits
-├── prescriptions
-├── reports
-└── emergency_contacts
-```
+## 🗄️ Database Tables (SQLite Schema v4)
+* **`users`**: Contains demographic, blood group, allergic history, and `connected_hospital` parameters.
+* **`vitals`**: Logs heart rate, systolic/diastolic pressures, glucose levels, temperature, SpO2, and weights.
+* **`medicines`**: Stores dosage schedules, active times, precautions, and instructions.
+* **`medication_logs`**: Tracks adherence history (Taken/Missed doses).
+* **`doctor_visits`**: Logs clinical consultations and appointment follow-ups.
 
 ---
 
-## 👥 Team
-
-| Member | Responsibilities |
-|---|---|
-| Person 1 | Auth, Profile, Firebase Auth |
-| Person 2 | Vitals, Vital Model, Vital Repository |
-| Person 3 | Medication, Doctor Visits, Prescriptions, Notifications, Medicine Repository |
-| Person 4 | Dashboard, Analytics, Reports, Emergency, PDF Service, SOS Service |
-
----
-
-## 🚀 Getting Started
+## 🚀 Getting Started Locally
 
 ### Prerequisites
-- Flutter SDK 3.x
+- Flutter SDK (v3.19.x or higher)
 - Dart SDK
-- Firebase project (Firestore + Storage + Auth enabled)
-- Android Studio or VS Code
+- Android SDK (for mobile emulation) or Chrome/Edge (for web debugging)
 
 ### Setup
+1. **Clone the repo**:
+   ```bash
+   git clone https://github.com/gunavathibaskaran170/MediTrack.git
+   cd MediTrack
+   ```
 
-```bash
-# Clone the repository
-git clone https://github.com/your-username/meditrack.git
-cd meditrack
+2. **Retrieve Dependencies**:
+   ```bash
+   flutter pub get
+   ```
 
-# Install dependencies
-flutter pub get
-
-# Add your Firebase config
-# Place google-services.json in android/app/
-# Place GoogleService-Info.plist in ios/Runner/
-
-# Run the app
-flutter run
-```
-
----
-
-## 🛠️ Tech Stack
-
-| Layer | Technology |
-|---|---|
-| Frontend | Flutter (Dart) |
-| State Management | Provider |
-| Backend | Firebase Firestore |
-| Storage | Firebase Cloud Storage |
-| Auth | Firebase Authentication |
-| Notifications | Flutter Local Notifications |
-| PDF Generation | Custom PDF Service |
+3. **Run Application**:
+   ```bash
+   flutter run -d chrome # Runs Flutter Web App
+   ```
 
 ---
 
-## 📌 Objectives
+## ☁️ Vercel Web Deployment
 
-- ✅ Improve medication adherence
-- ✅ Encourage regular health monitoring
-- ✅ Digitize medical records
-- ✅ Simplify doctor consultations
-- ✅ Generate organized health reports
-- ✅ Provide emergency support tools
-- ✅ Build a long-term personal health history
+To deploy this project as a live, routing-friendly static web application on Vercel:
+
+1. **Build the production web build**:
+   ```bash
+   flutter build web --release
+   ```
+   *This compiles all files and copies the routing-friendly [web/vercel.json](file:///D:/dev%20fusion/web/vercel.json) configuration into `build/web/`.*
+
+2. **Deploy to production**:
+   ```bash
+   vercel build/web --prod --scope amigotech
+   ```
+   *This uploads only the static folder, treating the compiled folder as root, and configures route rewrites to allow deep links (e.g. `/analytics`) to load index.html without throwing 404 errors.*
 
 ---
 
 ## 📃 License
 
-This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
+This project is licensed under the MIT License.
